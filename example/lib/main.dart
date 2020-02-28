@@ -37,25 +37,28 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Plugin example app'),
         ),
-        body: Padding(
-          padding: const EdgeInsets.only(bottom: 8.0),
-          child: TimelineEditor(
-              countTracks: 2,
-              trackBuilder: (track, pps, duration) => track == 1
-                  ? TimelineEditorTrack(
-                      boxes: boxes,
-                      pixelsPerSeconds: pps,
-                      durationInSeconds: duration,
-                    )
-                  : TimelineEditorTrack.fromContinuous(
-                      continuousBoxes: boxesContinuous,
-                      pixelsPerSeconds: pps,
-                      durationInSeconds: duration,
-                    ),
-              blocksEvery: 5,
-              durationInSeconds: 300,
-              child:
-                  Expanded(child: Center(child: Text('Plugin example app')))),
+        body: Column(
+          children: <Widget>[
+            Expanded(child: Center(child: Text('Plugin example app'))),
+            Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: TimelineEditor(
+                  countTracks: 2,
+                  trackBuilder: (track, pps, duration) => track == 1
+                      ? TimelineEditorTrack(
+                          boxes: boxes,
+                          pixelsPerSeconds: pps,
+                          durationInSeconds: duration,
+                        )
+                      : TimelineEditorTrack.fromContinuous(
+                          continuousBoxes: boxesContinuous,
+                          pixelsPerSeconds: pps,
+                          durationInSeconds: duration,
+                        ),
+                  blocksEvery: 5,
+                  durationInSeconds: 300,
+                )),
+          ],
         ),
       ),
     );
