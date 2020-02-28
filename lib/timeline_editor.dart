@@ -8,8 +8,6 @@ typedef TimelineEditorTrackBuilder = TimelineEditorTrack Function(
     int trackNumber, int pixelsPerSeconds, int duration);
 
 class TimelineEditor extends StatefulWidget {
-  final Widget child;
-
   final int countTracks;
   final int durationInSeconds;
   final int blocksEvery;
@@ -17,7 +15,6 @@ class TimelineEditor extends StatefulWidget {
 
   const TimelineEditor({
     Key key,
-    @required this.child,
     @required this.durationInSeconds,
     @required this.trackBuilder,
     @required this.countTracks,
@@ -48,7 +45,6 @@ class _TimelineEditorState extends State<TimelineEditor> {
       child: Container(
         child: Column(
           children: <Widget>[
-            widget.child,
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Column(
