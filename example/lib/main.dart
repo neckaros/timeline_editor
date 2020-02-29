@@ -20,13 +20,24 @@ class _MyAppState extends State<MyApp> {
   }
 
   static const List<TimelineEditorBox> boxes = [
-    TimelineEditorBox(0, 10),
-    TimelineEditorBox(15, 10),
+    TimelineEditorBox(0, 3),
+    TimelineEditorBox(7, 4),
   ];
 
-  static const List<TimelineEditorContinuousBox> boxesContinuous = [
-    TimelineEditorContinuousBox(0),
-    TimelineEditorContinuousBox(15),
+  static List<TimelineEditorContinuousBox> boxesContinuous = [
+    const TimelineEditorContinuousBox(0,
+        child: Image(image: AssetImage('assets/image.jpg'))),
+    TimelineEditorContinuousBox(4,
+        onTap: (start, duration) =>
+            print('tapped for $start to ${start + duration}'),
+        color: Colors.black,
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: const <Widget>[
+            const Image(image: const AssetImage('assets/image.jpg')),
+          ],
+        )),
   ];
 
   @override
@@ -43,9 +54,11 @@ class _MyAppState extends State<MyApp> {
             Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: TimelineEditor(
+                  position: 20,
                   countTracks: 2,
                   trackBuilder: (track, pps, duration) => track == 1
                       ? TimelineEditorTrack(
+                          defaultColor: Colors.green[700],
                           boxes: boxes,
                           pixelsPerSeconds: pps,
                           durationInSeconds: duration,

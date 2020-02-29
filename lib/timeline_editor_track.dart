@@ -4,15 +4,21 @@ class TimelineEditorBox {
   final int duration;
   final int start;
   final Widget child;
+  final Color color;
+  final void Function(int start, int duration) onTap;
 
-  const TimelineEditorBox(this.start, this.duration, {this.child});
+  const TimelineEditorBox(this.start, this.duration,
+      {this.child, this.color, this.onTap});
 }
 
 class TimelineEditorContinuousBox {
   final int start;
   final Widget child;
+  final Color color;
+  final void Function(int start, int duration) onTap;
 
-  const TimelineEditorContinuousBox(this.start, {this.child});
+  const TimelineEditorContinuousBox(this.start,
+      {this.child, this.color, this.onTap});
 }
 
 class TimelineEditorTrack extends StatefulWidget {
@@ -22,20 +28,24 @@ class TimelineEditorTrack extends StatefulWidget {
 
   final int durationInSeconds;
 
-  const TimelineEditorTrack({
-    Key key,
-    @required this.boxes,
-    @required this.pixelsPerSeconds,
-    @required this.durationInSeconds,
-  })  : continuousBoxes = null,
+  final Color defaultColor;
+
+  const TimelineEditorTrack(
+      {Key key,
+      @required this.boxes,
+      @required this.pixelsPerSeconds,
+      @required this.durationInSeconds,
+      this.defaultColor})
+      : continuousBoxes = null,
         super(key: key);
 
-  TimelineEditorTrack.fromContinuous({
-    Key key,
-    @required this.continuousBoxes,
-    @required this.pixelsPerSeconds,
-    @required this.durationInSeconds,
-  }) : boxes = null;
+  TimelineEditorTrack.fromContinuous(
+      {Key key,
+      @required this.continuousBoxes,
+      @required this.pixelsPerSeconds,
+      @required this.durationInSeconds,
+      this.defaultColor})
+      : boxes = null;
 
   @override
   _TimelineEditorTrackState createState() => _TimelineEditorTrackState();
@@ -70,7 +80,9 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
             : previous.start - box.start;
         previous = box;
         targetBoxes.insert(
-            0, TimelineEditorBox(box.start, duration, child: box.child));
+            0,
+            TimelineEditorBox(box.start, duration,
+                child: box.child, color: box.color, onTap: box.onTap));
       }
       boxes = targetBoxes;
     }
@@ -80,11 +92,16 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
   Widget build(BuildContext context) {
     return Stack(
       children: boxes
-          .map((b) => TimelineSlot(
-                pixelPerSeconds: widget.pixelsPerSeconds,
-                duration: b.duration,
-                start: b.start,
-                color: Colors.red,
+          .map((b) => GestureDetector(
+                onTap:
+                    b.onTap == null ? null : () => b.onTap(b.start, b.duration),
+                child: TimelineSlot(
+                  pixelPerSeconds: widget.pixelsPerSeconds,
+                  duration: b.duration,
+                  start: b.start,
+                  color: b.color ?? widget.defaultColor ?? Colors.red,
+                  child: b.child,
+                ),
               ))
           .toList(),
     );
