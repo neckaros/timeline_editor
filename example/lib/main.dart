@@ -13,16 +13,18 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
+  int box1Start = 0;
+
+  void updateBox1(int seconds) {
+    setState(() {
+      box1Start += seconds;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
   }
-
-  static const List<TimelineEditorBox> boxes = [
-    TimelineEditorBox(0, 3),
-    TimelineEditorBox(7, 4),
-  ];
 
   static List<TimelineEditorContinuousBox> boxesContinuous = [
     const TimelineEditorContinuousBox(0,
@@ -63,7 +65,11 @@ class _MyAppState extends State<MyApp> {
                   trackBuilder: (track, pps, duration) => track == 1
                       ? TimelineEditorTrack(
                           defaultColor: Colors.green[700],
-                          boxes: boxes,
+                          boxes: [
+                            TimelineEditorBox(box1Start, 3,
+                                onMoved: updateBox1),
+                            TimelineEditorBox(7, 4),
+                          ],
                           pixelsPerSeconds: pps,
                           durationInSeconds: duration,
                         )

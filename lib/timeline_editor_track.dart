@@ -9,12 +9,15 @@ class TimelineEditorBox {
   final void Function(Object selectedItem) onSelectedMenuItem;
   final void Function(int start, int duration) onTap;
 
+  final void Function(int seconds) onMoved;
+
   const TimelineEditorBox(this.start, this.duration,
       {this.child,
       this.color,
       this.onTap,
       this.menuEntries,
-      this.onSelectedMenuItem});
+      this.onSelectedMenuItem,
+      this.onMoved});
 }
 
 class TimelineEditorContinuousBox {
@@ -77,7 +80,10 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
   @override
   void didUpdateWidget(TimelineEditorTrack oldWidget) {
     if (oldWidget.continuousBoxes != widget.continuousBoxes ||
-        oldWidget.boxes != oldWidget.boxes) super.didUpdateWidget(oldWidget);
+        boxes != widget.boxes) {
+      setup();
+    }
+    super.didUpdateWidget(oldWidget);
   }
 
   void setup() {
@@ -126,6 +132,19 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
     }
   }
 
+  double globalMoveSinceLastSend = 0;
+  void _onDragUpdate(DragUpdateDetails details, TimelineEditorBox box) {
+    if (box.onMoved != null) {
+      globalMoveSinceLastSend += details.delta.dx;
+      if (globalMoveSinceLastSend.abs() > widget.pixelsPerSeconds) {
+        var numberOfSeconds =
+            (globalMoveSinceLastSend / widget.pixelsPerSeconds).ceil();
+        globalMoveSinceLastSend -= numberOfSeconds * widget.pixelsPerSeconds;
+        box.onMoved(numberOfSeconds);
+      }
+    }
+  }
+
   void _storePosition(TapDownDetails details) {
     _tapPosition = details.globalPosition;
   }
@@ -139,6 +158,11 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
                     b.onTap == null ? null : () => b.onTap(b.start, b.duration),
                 onLongPress: () => _showCustomMenu(b),
                 onTapDown: _storePosition,
+                onHorizontalDragStart: b.onMoved == null
+                    ? null
+                    : (_) => globalMoveSinceLastSend = 0,
+                onHorizontalDragUpdate:
+                    b.onMoved == null ? null : (d) => _onDragUpdate(d, b),
                 child: TimelineSlot(
                   pixelPerSeconds: widget.pixelsPerSeconds,
                   duration: b.duration,
