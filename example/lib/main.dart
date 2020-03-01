@@ -13,11 +13,18 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
-  int box1Start = 0;
+  double box1Start = 0;
+  double box2Start = 4;
 
-  void updateBox1(int seconds) {
+  void updateBox1(double seconds) {
     setState(() {
       box1Start += seconds;
+    });
+  }
+
+  void updateBox2(double seconds) {
+    setState(() {
+      box2Start += seconds;
     });
   }
 
@@ -26,28 +33,29 @@ class _MyAppState extends State<MyApp> {
     super.initState();
   }
 
-  static List<TimelineEditorContinuousBox> boxesContinuous = [
-    const TimelineEditorContinuousBox(0,
-        child: Image(image: AssetImage('assets/image.jpg'))),
-    TimelineEditorContinuousBox(4,
-        menuEntries: [
-          PopupMenuItem<String>(child: Text('Delete'), value: 'deleted')
-        ],
-        onSelectedMenuItem: (v) => print('Selected: $v'),
-        onTap: (start, duration) =>
-            print('tapped for $start to ${start + duration}'),
-        color: Colors.black,
-        child: Row(
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: const <Widget>[
-            const Image(image: const AssetImage('assets/image.jpg')),
-          ],
-        )),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    List<TimelineEditorContinuousBox> boxesContinuous = [
+      const TimelineEditorContinuousBox(0,
+          child: Image(image: AssetImage('assets/image.jpg'))),
+      TimelineEditorContinuousBox(box2Start,
+          menuEntries: [
+            PopupMenuItem<String>(child: Text('Delete'), value: 'deleted')
+          ],
+          onMoved: updateBox2,
+          onSelectedMenuItem: (v) => print('Selected: $v'),
+          onTap: (start, duration) =>
+              print('tapped for $start to ${start + duration}'),
+          color: Colors.black,
+          child: Row(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: const <Widget>[
+              const Image(image: const AssetImage('assets/image.jpg')),
+            ],
+          )),
+    ];
+
     return MaterialApp(
       darkTheme: ThemeData.dark(),
       home: Scaffold(
@@ -67,7 +75,8 @@ class _MyAppState extends State<MyApp> {
                           defaultColor: Colors.green[700],
                           boxes: [
                             TimelineEditorBox(box1Start, 3,
-                                onMoved: updateBox1),
+                                onMoved: updateBox1,
+                                onMovedEnd: () => print('end moved')),
                             TimelineEditorBox(7, 4),
                           ],
                           pixelsPerSeconds: pps,

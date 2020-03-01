@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 
 class TimelineEditorBox {
-  final int duration;
-  final int start;
+  final double duration;
+  final double start;
   final Widget child;
   final Color color;
   final List<PopupMenuEntry> menuEntries;
   final void Function(Object selectedItem) onSelectedMenuItem;
-  final void Function(int start, int duration) onTap;
+  final void Function(double start, double duration) onTap;
 
-  final void Function(int seconds) onMoved;
+  final void Function(double seconds) onMoved;
+  final VoidCallback onMovedEnd;
 
   const TimelineEditorBox(this.start, this.duration,
       {this.child,
@@ -17,23 +18,28 @@ class TimelineEditorBox {
       this.onTap,
       this.menuEntries,
       this.onSelectedMenuItem,
-      this.onMoved});
+      this.onMoved,
+      this.onMovedEnd});
 }
 
 class TimelineEditorContinuousBox {
-  final int start;
+  final double start;
   final Widget child;
   final Color color;
   final List<PopupMenuEntry> menuEntries;
   final void Function(Object selectedItem) onSelectedMenuItem;
-  final void Function(int start, int duration) onTap;
+  final void Function(double start, double duration) onTap;
+  final void Function(double seconds) onMoved;
+  final VoidCallback onMovedEnd;
 
   const TimelineEditorContinuousBox(this.start,
       {this.child,
       this.color,
       this.onTap,
       this.menuEntries,
-      this.onSelectedMenuItem});
+      this.onSelectedMenuItem,
+      this.onMoved,
+      this.onMovedEnd});
 }
 
 class TimelineEditorTrack extends StatefulWidget {
@@ -41,7 +47,7 @@ class TimelineEditorTrack extends StatefulWidget {
   final List<TimelineEditorContinuousBox> continuousBoxes;
   final int pixelsPerSeconds;
 
-  final int durationInSeconds;
+  final double durationInSeconds;
 
   final Color defaultColor;
 
@@ -109,6 +115,8 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
               onTap: box.onTap,
               menuEntries: box.menuEntries,
               onSelectedMenuItem: box.onSelectedMenuItem,
+              onMoved: box.onMoved,
+              onMovedEnd: box.onMovedEnd,
             ));
       }
       boxes = targetBoxes;
@@ -136,12 +144,8 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
   void _onDragUpdate(DragUpdateDetails details, TimelineEditorBox box) {
     if (box.onMoved != null) {
       globalMoveSinceLastSend += details.delta.dx;
-      if (globalMoveSinceLastSend.abs() > widget.pixelsPerSeconds) {
-        var numberOfSeconds =
-            (globalMoveSinceLastSend / widget.pixelsPerSeconds).ceil();
-        globalMoveSinceLastSend -= numberOfSeconds * widget.pixelsPerSeconds;
-        box.onMoved(numberOfSeconds);
-      }
+      var numberOfSeconds = details.delta.dx / widget.pixelsPerSeconds;
+      box.onMoved(numberOfSeconds);
     }
   }
 
@@ -156,13 +160,16 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
           .map((b) => GestureDetector(
                 onTap:
                     b.onTap == null ? null : () => b.onTap(b.start, b.duration),
-                onLongPress: () => _showCustomMenu(b),
+                onLongPress:
+                    b.menuEntries == null ? null : () => _showCustomMenu(b),
                 onTapDown: _storePosition,
                 onHorizontalDragStart: b.onMoved == null
                     ? null
                     : (_) => globalMoveSinceLastSend = 0,
                 onHorizontalDragUpdate:
                     b.onMoved == null ? null : (d) => _onDragUpdate(d, b),
+                onHorizontalDragEnd:
+                    b.onMovedEnd == null ? null : (_) => b.onMovedEnd(),
                 child: TimelineSlot(
                   pixelPerSeconds: widget.pixelsPerSeconds,
                   duration: b.duration,
@@ -187,8 +194,8 @@ class TimelineSlot extends StatelessWidget {
   }) : super(key: key);
 
   final int pixelPerSeconds;
-  final int duration;
-  final int start;
+  final double duration;
+  final double start;
   final Color color;
   final Widget child;
 

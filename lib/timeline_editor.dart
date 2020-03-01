@@ -6,11 +6,11 @@ import 'package:timeline_editor/timeline_editor_track.dart';
 export './timeline_editor_track.dart';
 
 typedef TimelineEditorTrackBuilder = TimelineEditorTrack Function(
-    int trackNumber, int pixelsPerSeconds, int duration);
+    int trackNumber, int pixelsPerSeconds, double duration);
 
 class TimelineEditor extends StatefulWidget {
   final int countTracks;
-  final int durationInSeconds;
+  final double durationInSeconds;
   final int blocksEvery;
   final TimelineEditorTrackBuilder trackBuilder;
   final int position;
@@ -35,7 +35,7 @@ class _TimelineEditorState extends State<TimelineEditor> {
 
   String secondsToString(int seconds) {
     var minutes = (seconds / 60).floor();
-    var remainingSeconds = seconds - (minutes * 60);
+    var remainingSeconds = (seconds - (minutes * 60)).floor();
 
     return '${twoDigits(minutes)}:${twoDigits(remainingSeconds)}';
   }
@@ -64,14 +64,17 @@ class _TimelineEditorState extends State<TimelineEditor> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          Row(
-                            children: List.generate(
-                                totalSlots,
-                                (i) => SizedBox(
-                                    width: pixelPerSeconds.toDouble() *
-                                        finalBlocksEvery,
-                                    child: Text(secondsToString(
-                                        i * finalBlocksEvery)))).toList(),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Row(
+                              children: List.generate(
+                                  totalSlots,
+                                  (i) => SizedBox(
+                                      width: pixelPerSeconds.toDouble() *
+                                          finalBlocksEvery,
+                                      child: Text(secondsToString(
+                                          i * finalBlocksEvery)))).toList(),
+                            ),
                           ),
                           ...List<Widget>.generate(
                               widget.countTracks,
