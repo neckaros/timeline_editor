@@ -5,20 +5,32 @@ class TimelineEditorBox {
   final int start;
   final Widget child;
   final Color color;
+  final List<PopupMenuEntry> menuEntries;
+  final void Function(Object selectedItem) onSelectedMenuItem;
   final void Function(int start, int duration) onTap;
 
   const TimelineEditorBox(this.start, this.duration,
-      {this.child, this.color, this.onTap});
+      {this.child,
+      this.color,
+      this.onTap,
+      this.menuEntries,
+      this.onSelectedMenuItem});
 }
 
 class TimelineEditorContinuousBox {
   final int start;
   final Widget child;
   final Color color;
+  final List<PopupMenuEntry> menuEntries;
+  final void Function(Object selectedItem) onSelectedMenuItem;
   final void Function(int start, int duration) onTap;
 
   const TimelineEditorContinuousBox(this.start,
-      {this.child, this.color, this.onTap});
+      {this.child,
+      this.color,
+      this.onTap,
+      this.menuEntries,
+      this.onSelectedMenuItem});
 }
 
 class TimelineEditorTrack extends StatefulWidget {
@@ -54,6 +66,8 @@ class TimelineEditorTrack extends StatefulWidget {
 class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
   List<TimelineEditorBox> boxes;
 
+  var _tapPosition;
+
   @override
   void initState() {
     setup();
@@ -81,11 +95,39 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
         previous = box;
         targetBoxes.insert(
             0,
-            TimelineEditorBox(box.start, duration,
-                child: box.child, color: box.color, onTap: box.onTap));
+            TimelineEditorBox(
+              box.start,
+              duration,
+              child: box.child,
+              color: box.color,
+              onTap: box.onTap,
+              menuEntries: box.menuEntries,
+              onSelectedMenuItem: box.onSelectedMenuItem,
+            ));
       }
       boxes = targetBoxes;
     }
+  }
+
+  void _showCustomMenu(TimelineEditorBox box) async {
+    if (box.menuEntries != null) {
+      final RenderBox overlay = Overlay.of(context).context.findRenderObject();
+
+      var result = await showMenu(
+          context: context,
+          items: box.menuEntries, //<PopupMenuEntry>[PlusMinusEntry()],
+          position: RelativeRect.fromRect(
+              _tapPosition & Size(40, 40), // smaller rect, the touch area
+              Offset.zero & overlay.size // Bigger rect, the entire screen
+              ));
+      if (box.onSelectedMenuItem != null) {
+        box.onSelectedMenuItem(result);
+      }
+    }
+  }
+
+  void _storePosition(TapDownDetails details) {
+    _tapPosition = details.globalPosition;
   }
 
   @override
@@ -95,6 +137,8 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
           .map((b) => GestureDetector(
                 onTap:
                     b.onTap == null ? null : () => b.onTap(b.start, b.duration),
+                onLongPress: () => _showCustomMenu(b),
+                onTapDown: _storePosition,
                 child: TimelineSlot(
                   pixelPerSeconds: widget.pixelsPerSeconds,
                   duration: b.duration,

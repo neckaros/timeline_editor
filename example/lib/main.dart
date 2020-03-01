@@ -28,6 +28,10 @@ class _MyAppState extends State<MyApp> {
     const TimelineEditorContinuousBox(0,
         child: Image(image: AssetImage('assets/image.jpg'))),
     TimelineEditorContinuousBox(4,
+        menuEntries: [
+          PopupMenuItem<String>(child: Text('Delete'), value: 'deleted')
+        ],
+        onSelectedMenuItem: (v) => print('Selected: $v'),
         onTap: (start, duration) =>
             print('tapped for $start to ${start + duration}'),
         color: Colors.black,
