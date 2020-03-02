@@ -4,6 +4,9 @@ Early version of a timeline editor. Support:
 * Move of element
 * Context menu
 * Zoom of timeline
+* Progress indicator
+
+<img src="https://raw.githubusercontent.com/neckaros/timeline_editor/master/example/demo.gif" height="700" />
 
 ## Usage
 
