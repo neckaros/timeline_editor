@@ -6,14 +6,15 @@ import 'package:timeline_editor/timeline_editor_track.dart';
 export './timeline_editor_track.dart';
 
 typedef TimelineEditorTrackBuilder = TimelineEditorTrack Function(
-    int trackNumber, int pixelsPerSeconds, double duration);
+    int trackNumber, double pixelsPerSeconds, double duration);
 
 class TimelineEditor extends StatefulWidget {
   final int countTracks;
   final double durationInSeconds;
   final int blocksEvery;
   final TimelineEditorTrackBuilder trackBuilder;
-  final int position;
+  final double position;
+  final int pixelPerSeconds;
 
   const TimelineEditor({
     Key key,
@@ -22,15 +23,25 @@ class TimelineEditor extends StatefulWidget {
     @required this.countTracks,
     this.position,
     this.blocksEvery = 5,
+    this.pixelPerSeconds,
   }) : super(key: key);
   @override
   _TimelineEditorState createState() => _TimelineEditorState();
 }
 
 class _TimelineEditorState extends State<TimelineEditor> {
+  double scale = 1;
+  double previousScale;
+  double pps;
+
+  double previousMaxWidth;
   String twoDigits(int n) {
     if (n >= 10) return "$n";
     return "0$n";
+  }
+
+  double computePPS(double width) {
+    return widget.pixelPerSeconds ?? (width / widget.durationInSeconds);
   }
 
   String secondsToString(int seconds) {
@@ -40,23 +51,36 @@ class _TimelineEditorState extends State<TimelineEditor> {
     return '${twoDigits(minutes)}:${twoDigits(remainingSeconds)}';
   }
 
+  void _onScaleStart(ScaleStartDetails details) {
+    previousScale = scale;
+    print('=$scale=');
+  }
+
+  void _onScaleUpdate(ScaleUpdateDetails details) {
+    print('=$previousScale + ${details.scale}=');
+    var newScale = previousScale * details.scale;
+    if (newScale < 1) newScale = 1;
+    setState(() => scale = newScale);
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      onScaleStart: _onScaleStart,
+      onScaleUpdate: _onScaleUpdate,
       child: Container(
         child: Column(
           children: <Widget>[
             LayoutBuilder(
               builder: (ctx, constraints) {
-                var pixelPerSeconds = max(
-                    ((constraints.maxWidth ?? 600) / widget.durationInSeconds)
-                        .floor(),
-                    8);
+                if (pps == null || previousMaxWidth != constraints.maxWidth) {
+                  pps = computePPS(constraints.maxWidth);
+                }
+                var pixelPerSeconds = pps * scale;
                 var finalBlocksEvery =
                     max(widget.blocksEvery, (50 / pixelPerSeconds).ceil());
                 var totalSlots =
-                    (widget.durationInSeconds / finalBlocksEvery).ceil();
-                print(constraints);
+                    (widget.durationInSeconds / finalBlocksEvery).floor();
                 return SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Stack(
@@ -70,8 +94,7 @@ class _TimelineEditorState extends State<TimelineEditor> {
                               children: List.generate(
                                   totalSlots,
                                   (i) => SizedBox(
-                                      width: pixelPerSeconds.toDouble() *
-                                          finalBlocksEvery,
+                                      width: pixelPerSeconds * finalBlocksEvery,
                                       child: Text(secondsToString(
                                           i * finalBlocksEvery)))).toList(),
                             ),
@@ -84,7 +107,7 @@ class _TimelineEditorState extends State<TimelineEditor> {
                       ),
                       if (widget.position != null)
                         Positioned(
-                          left: (widget.position * pixelPerSeconds).toDouble(),
+                          left: (widget.position * pixelPerSeconds),
                           top: 0,
                           bottom: 0,
                           child: Container(

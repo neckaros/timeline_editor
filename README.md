@@ -1,14 +1,23 @@
 # timeline_editor
 
-A new flutter plugin project.
+Early version of a timeline editor. Support:
+* Move of element
+* Context menu
+* Zoom of timeline
 
-## Getting Started
+## Usage
 
-This project is a starting point for a Flutter
-[plug-in package](https://flutter.dev/developing-packages/),
-a specialized package that includes platform-specific implementation code for
-Android and/or iOS.
+### Installation
 
-For help getting started with Flutter, view our 
-[online documentation](https://flutter.dev/docs), which offers tutorials, 
-samples, guidance on mobile development, and a full API reference.
+Add `secure_application` as a dependency in your pubspec.yaml file ([what?](https://flutter.io/using-packages/)).
+
+### Import
+
+Import secure_application:
+```dart
+import 'package:timeline_editor/timeline_editor.dart';
+```
+
+### Example
+More doc coming
+meanwhile see example

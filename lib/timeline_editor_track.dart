@@ -45,7 +45,7 @@ class TimelineEditorContinuousBox {
 class TimelineEditorTrack extends StatefulWidget {
   final List<TimelineEditorBox> boxes;
   final List<TimelineEditorContinuousBox> continuousBoxes;
-  final int pixelsPerSeconds;
+  final double pixelsPerSeconds;
 
   final double durationInSeconds;
 
@@ -145,6 +145,9 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
     if (box.onMoved != null) {
       globalMoveSinceLastSend += details.delta.dx;
       var numberOfSeconds = details.delta.dx / widget.pixelsPerSeconds;
+      if (box.start + numberOfSeconds < 0) {
+        numberOfSeconds = 0;
+      }
       box.onMoved(numberOfSeconds);
     }
   }
@@ -156,26 +159,30 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
   @override
   Widget build(BuildContext context) {
     return Stack(
+      overflow: Overflow.clip,
       children: boxes
-          .map((b) => GestureDetector(
-                onTap:
-                    b.onTap == null ? null : () => b.onTap(b.start, b.duration),
-                onLongPress:
-                    b.menuEntries == null ? null : () => _showCustomMenu(b),
-                onTapDown: _storePosition,
-                onHorizontalDragStart: b.onMoved == null
-                    ? null
-                    : (_) => globalMoveSinceLastSend = 0,
-                onHorizontalDragUpdate:
-                    b.onMoved == null ? null : (d) => _onDragUpdate(d, b),
-                onHorizontalDragEnd:
-                    b.onMovedEnd == null ? null : (_) => b.onMovedEnd(),
-                child: TimelineSlot(
-                  pixelPerSeconds: widget.pixelsPerSeconds,
-                  duration: b.duration,
-                  start: b.start,
-                  color: b.color ?? widget.defaultColor ?? Colors.red,
-                  child: b.child,
+          .map((b) => ClipRect(
+                child: GestureDetector(
+                  onTap: b.onTap == null
+                      ? null
+                      : () => b.onTap(b.start, b.duration),
+                  onLongPress:
+                      b.menuEntries == null ? null : () => _showCustomMenu(b),
+                  onTapDown: _storePosition,
+                  onHorizontalDragStart: b.onMoved == null
+                      ? null
+                      : (_) => globalMoveSinceLastSend = 0,
+                  onHorizontalDragUpdate:
+                      b.onMoved == null ? null : (d) => _onDragUpdate(d, b),
+                  onHorizontalDragEnd:
+                      b.onMovedEnd == null ? null : (_) => b.onMovedEnd(),
+                  child: TimelineSlot(
+                    pixelPerSeconds: widget.pixelsPerSeconds,
+                    duration: b.duration,
+                    start: b.start,
+                    color: b.color ?? widget.defaultColor ?? Colors.red,
+                    child: b.child,
+                  ),
                 ),
               ))
           .toList(),
@@ -193,7 +200,7 @@ class TimelineSlot extends StatelessWidget {
     this.child,
   }) : super(key: key);
 
-  final int pixelPerSeconds;
+  final double pixelPerSeconds;
   final double duration;
   final double start;
   final Color color;
