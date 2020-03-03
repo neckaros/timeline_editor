@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
-
-import 'package:flutter/services.dart';
 import 'package:timeline_editor/timeline_editor.dart';
 
 void main() => runApp(MyApp());
@@ -12,7 +9,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
   double box1Start = 0;
   double box2Start = 120;
   bool deleted = false;
