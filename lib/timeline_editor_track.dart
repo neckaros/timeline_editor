@@ -1,15 +1,34 @@
 import 'package:flutter/material.dart';
 
+/// a box to be displayed in a [TimelineEditorTrack] with a [start] and a [duration]
 class TimelineEditorBox {
+  /// duration in seconds of the box
   final double duration;
+
+  /// the start time in seconds of this box
   final double start;
+
+  /// optional  custom child to display in this box
   final Widget child;
+
+  /// background color of this box
   final Color color;
+
+  /// optional [PopupMenuEntry] list to display if a user long press this box
   final List<PopupMenuEntry> menuEntries;
+
+  /// optional callback when a user click on one of the [menuEntries]
   final void Function(Object selectedItem) onSelectedMenuItem;
+
+  ///  optional callback when the box is tapped/clicked
   final void Function(double start, double duration) onTap;
 
+  /// optional callback that will activate the
+  /// possibility of moving this box
   final void Function(double seconds) onMoved;
+
+  /// if [onMoved] is set this callback will be called when
+  /// the user stop the move
   final VoidCallback onMovedEnd;
 
   const TimelineEditorBox(this.start, this.duration,
@@ -22,14 +41,33 @@ class TimelineEditorBox {
       this.onMovedEnd});
 }
 
+/// a box to be displayed in a [TimelineEditorTrack] with only a [start]
+/// as the end will be the start of the next box of the timeline
 class TimelineEditorContinuousBox {
+  /// the start time in seconds of this box
   final double start;
+
+  /// the custom child to display in this box
   final Widget child;
+
+  /// background color of this box
   final Color color;
+
+  /// optional [PopupMenuEntry] list to display if a user long press this box
   final List<PopupMenuEntry> menuEntries;
+
+  /// optional callback when a user click on one of the [menuEntries]
   final void Function(Object selectedItem) onSelectedMenuItem;
+
+  ///  optional callback when the box is tapped/clicked
   final void Function(double start, double duration) onTap;
+
+  /// optional callback that will activate the
+  /// possibility of moving this box
   final void Function(double seconds) onMoved;
+
+  /// if [onMoved] is set this callback will be called when
+  /// the user stop the move
   final VoidCallback onMovedEnd;
 
   const TimelineEditorContinuousBox(this.start,
@@ -42,6 +80,7 @@ class TimelineEditorContinuousBox {
       this.onMovedEnd});
 }
 
+/// A track that can be used with the [timeline_editor] builder
 class TimelineEditorTrack extends StatefulWidget {
   final List<TimelineEditorBox> boxes;
   final List<TimelineEditorContinuousBox> continuousBoxes;
@@ -190,6 +229,7 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
   }
 }
 
+/// used to display a box in the [TimelineEditorTrack]
 class TimelineSlot extends StatelessWidget {
   const TimelineSlot({
     Key key,

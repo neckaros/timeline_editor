@@ -81,11 +81,11 @@ class _MyAppState extends State<MyApp> {
       darkTheme: ThemeData.dark(),
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Plugin example app'),
+          title: const Text('Timeline_editor example app'),
         ),
         body: Column(
           children: <Widget>[
-            Expanded(child: Center(child: Text('Plugin example app'))),
+            Expanded(child: Center(child: Text('Timeline_editor example app'))),
             Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: TimelineEditor(

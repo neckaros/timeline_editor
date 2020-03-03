@@ -5,15 +5,32 @@ import 'package:flutter/material.dart';
 import 'package:timeline_editor/timeline_editor_track.dart';
 export './timeline_editor_track.dart';
 
+/// [trackNumber] the track numer in the timeline editor
+/// [pixelsPerSeconds] how much pixel takes a second
+/// [duration] of the timeline
 typedef TimelineEditorTrackBuilder = TimelineEditorTrack Function(
     int trackNumber, double pixelsPerSeconds, double duration);
 
+/// Main timeline widget which contains the tracks
 class TimelineEditor extends StatefulWidget {
+  /// number of tracks
   final int countTracks;
+
+  /// duration of the timeline in seconds
   final double durationInSeconds;
+
+  /// optional distance in seconds between each time indicator
   final int blocksEvery;
+
+  /// the builder for each track
+  /// tou can use a [TimelineEditorTrack] or your custom track
   final TimelineEditorTrackBuilder trackBuilder;
+
+  /// optional position in the timeline for the position indicator
   final double position;
+
+  /// option initial number of pixels per seconds
+  /// if not set the timeline will initially fit the screen
   final int pixelPerSeconds;
 
   const TimelineEditor({

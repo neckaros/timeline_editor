@@ -1,8 +1,7 @@
 name: timeline_editor
-description: A new flutter plugin project.
+description: A flutter wiidget to help you manage timelines with tracks editable or not. with move, actions...
 version: 0.0.1
-author:
-homepage:
+homepage: https://github.com/neckaros/timeline_editor
 
 environment:
   sdk: ">=2.3.0 <3.0.0"
