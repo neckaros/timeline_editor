@@ -22,8 +22,9 @@ Import secure_application:
 ```dart
 import 'package:timeline_editor/timeline_editor.dart';
 ```
-```dart
+
 ### widgets
+```dart
 
 TimelineEditor(
                   position: position,
