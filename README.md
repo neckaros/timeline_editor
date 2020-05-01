@@ -7,6 +7,7 @@ Early version of a timeline editor. Support:
 * Progress indicator
 * track boxes
 * continuous tracks
+* scrub
 
 <img src="https://raw.githubusercontent.com/neckaros/timeline_editor/master/example/demo.gif" height="700" />
 
@@ -27,7 +28,8 @@ import 'package:timeline_editor/timeline_editor.dart';
 ```dart
 
 TimelineEditor(
-                  position: position,
+                  positionStream: positionStream,
+                  onPositionTap: (s) => position = s,
                   countTracks: 2,
                   trackBuilder: (track, pps, duration) => track == 1
                       ? TimelineEditorTrack(
