@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:timeline_editor/timeline_editor.dart';
 
@@ -13,6 +15,8 @@ class _MyAppState extends State<MyApp> {
   double box2Start = 120;
   bool deleted = false;
   double position = 0;
+  StreamController<double> positionController;
+  Timer progressTimer;
 
   void updateBox1(double seconds) {
     if (box1Start + seconds < 0) {
@@ -32,10 +36,10 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void positionUpdate() {
-    setState(() {
-      position += 0.1;
-    });
+  void positionUpdate(Timer timer) {
+    position += 0.350;
+    if (position > 300) position = 0;
+    positionController.add(position);
     /* if (position + 0.1 < 300)
       Timer(Duration(milliseconds: 100), () => positionUpdate());*/
   }
@@ -43,7 +47,16 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    positionUpdate();
+    positionController = StreamController<double>();
+    progressTimer = Timer.periodic(Duration(milliseconds: 350), positionUpdate);
+    positionUpdate(null);
+  }
+
+  @override
+  void dispose() {
+    progressTimer?.cancel();
+    positionController?.close();
+    super.dispose();
   }
 
   @override
@@ -62,9 +75,10 @@ class _MyAppState extends State<MyApp> {
         onMoved: updateBox2,
         onSelectedMenuItem: (v) {
           print('Selected: $v');
-          setState(() {
-            deleted = true;
-          });
+          if (v == "deleted")
+            setState(() {
+              deleted = true;
+            });
         },
         onTap: (start, duration) =>
             print('tapped for $start to ${start + duration}'),
@@ -85,7 +99,8 @@ class _MyAppState extends State<MyApp> {
             Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: TimelineEditor(
-                  position: position,
+                  onPositionTap: (s) => position = s,
+                  positionStream: positionController.stream,
                   countTracks: 2,
                   trackBuilder: (track, pps, duration) => track == 1
                       ? TimelineEditorTrack(

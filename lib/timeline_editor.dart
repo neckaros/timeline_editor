@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:timeline_editor/timeline_editor_track.dart';
+
+import 'cahced_layout_builder.dart';
 export './timeline_editor_track.dart';
 
 /// [trackNumber] the track numer in the timeline editor
@@ -25,8 +27,12 @@ class TimelineEditor extends StatefulWidget {
   /// tou can use a [TimelineEditorTrack] or your custom track
   final TimelineEditorTrackBuilder trackBuilder;
 
-  /// optional position in the timeline for the position indicator
-  final double position;
+  /// optional position stream in the timeline for the position indicator
+  /// we use stream to avoid rebuilding the whole widget for each position change
+  final Stream<double> positionStream;
+
+  /// user whant to switch to a time position in seconds
+  final void Function(double position) onPositionTap;
 
   /// option initial number of pixels per seconds
   /// if not set the timeline will initially fit the screen
@@ -37,9 +43,10 @@ class TimelineEditor extends StatefulWidget {
     @required this.durationInSeconds,
     @required this.trackBuilder,
     @required this.countTracks,
-    this.position,
+    this.positionStream,
     this.blocksEvery = 5,
     this.pixelPerSeconds,
+    this.onPositionTap,
   }) : super(key: key);
   @override
   _TimelineEditorState createState() => _TimelineEditorState();
@@ -79,6 +86,12 @@ class _TimelineEditorState extends State<TimelineEditor> {
     setState(() => scale = newScale);
   }
 
+  void _positionTap(TapUpDetails details) {
+    var pixelPerSeconds = pps * scale;
+    var secondsClick = details.localPosition.dx / pixelPerSeconds;
+    widget.onPositionTap?.call(secondsClick);
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -87,7 +100,16 @@ class _TimelineEditorState extends State<TimelineEditor> {
       child: Container(
         child: Column(
           children: <Widget>[
-            LayoutBuilder(
+            CachedLayoutBuilder(
+              parentParameters: [
+                widget.durationInSeconds,
+                widget.trackBuilder,
+                widget.countTracks,
+                widget.positionStream,
+                widget.blocksEvery,
+                widget.pixelPerSeconds,
+                widget.onPositionTap
+              ],
               builder: (ctx, constraints) {
                 if (pps == null || previousMaxWidth != constraints.maxWidth) {
                   pps = computePPS(constraints.maxWidth);
@@ -106,13 +128,17 @@ class _TimelineEditorState extends State<TimelineEditor> {
                         children: <Widget>[
                           Padding(
                             padding: const EdgeInsets.only(bottom: 8.0),
-                            child: Row(
-                              children: List.generate(
-                                  totalSlots,
-                                  (i) => SizedBox(
-                                      width: pixelPerSeconds * finalBlocksEvery,
-                                      child: Text(secondsToString(
-                                          i * finalBlocksEvery)))).toList(),
+                            child: GestureDetector(
+                              onTapUp: _positionTap,
+                              child: Row(
+                                children: List.generate(
+                                    totalSlots,
+                                    (i) => SizedBox(
+                                        width:
+                                            pixelPerSeconds * finalBlocksEvery,
+                                        child: Text(secondsToString(
+                                            i * finalBlocksEvery)))).toList(),
+                              ),
                             ),
                           ),
                           ...List<Widget>.generate(
@@ -121,16 +147,23 @@ class _TimelineEditorState extends State<TimelineEditor> {
                                   i, pixelPerSeconds, widget.durationInSeconds))
                         ],
                       ),
-                      if (widget.position != null)
-                        Positioned(
-                          left: (widget.position * pixelPerSeconds),
-                          top: 0,
-                          bottom: 0,
-                          child: Container(
-                            color: Colors.red,
-                            width: 2,
-                          ),
-                        )
+                      if (widget.positionStream != null)
+                        StreamBuilder<double>(
+                            stream: widget.positionStream,
+                            builder: (context, snapshot) {
+                              double position =
+                                  snapshot.data == null ? 0 : snapshot.data;
+                              return AnimatedPositioned(
+                                duration: Duration(milliseconds: 350),
+                                left: (position * pixelPerSeconds),
+                                top: 0,
+                                bottom: 0,
+                                child: Container(
+                                  color: Colors.red,
+                                  width: 2,
+                                ),
+                              );
+                            })
                     ],
                   ),
                 );

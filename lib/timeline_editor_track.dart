@@ -164,15 +164,21 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
 
   void _showCustomMenu(TimelineEditorBox box) async {
     if (box.menuEntries != null) {
+      final RenderBox button = context.findRenderObject();
       final RenderBox overlay = Overlay.of(context).context.findRenderObject();
+      final RelativeRect position = RelativeRect.fromRect(
+        Rect.fromPoints(
+          button.localToGlobal(Offset.zero, ancestor: overlay),
+          button.localToGlobal(button.size.bottomRight(Offset.zero),
+              ancestor: overlay),
+        ),
+        Offset.zero & overlay.size,
+      );
 
       var result = await showMenu(
           context: context,
           items: box.menuEntries, //<PopupMenuEntry>[PlusMinusEntry()],
-          position: RelativeRect.fromRect(
-              _tapPosition & Size(40, 40), // smaller rect, the touch area
-              Offset.zero & overlay.size // Bigger rect, the entire screen
-              ));
+          position: position);
       if (box.onSelectedMenuItem != null) {
         box.onSelectedMenuItem(result);
       }
@@ -201,26 +207,28 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
       overflow: Overflow.clip,
       children: boxes
           .map((b) => ClipRect(
-                child: GestureDetector(
-                  onTap: b.onTap == null
-                      ? null
-                      : () => b.onTap(b.start, b.duration),
-                  onLongPress:
-                      b.menuEntries == null ? null : () => _showCustomMenu(b),
-                  onTapDown: _storePosition,
-                  onHorizontalDragStart: b.onMoved == null
-                      ? null
-                      : (_) => globalMoveSinceLastSend = 0,
-                  onHorizontalDragUpdate:
-                      b.onMoved == null ? null : (d) => _onDragUpdate(d, b),
-                  onHorizontalDragEnd:
-                      b.onMovedEnd == null ? null : (_) => b.onMovedEnd(),
-                  child: TimelineSlot(
-                    pixelPerSeconds: widget.pixelsPerSeconds,
-                    duration: b.duration,
-                    start: b.start,
-                    color: b.color ?? widget.defaultColor ?? Colors.red,
-                    child: b.child,
+                child: Builder(
+                  builder: (context) => GestureDetector(
+                    onTap: b.onTap == null
+                        ? null
+                        : () => b.onTap(b.start, b.duration),
+                    onTapDown: _storePosition,
+                    onHorizontalDragStart: b.onMoved == null
+                        ? null
+                        : (_) => globalMoveSinceLastSend = 0,
+                    onHorizontalDragUpdate:
+                        b.onMoved == null ? null : (d) => _onDragUpdate(d, b),
+                    onHorizontalDragEnd:
+                        b.onMovedEnd == null ? null : (_) => b.onMovedEnd(),
+                    child: TimelineSlot(
+                      pixelPerSeconds: widget.pixelsPerSeconds,
+                      duration: b.duration,
+                      start: b.start,
+                      color: b.color ?? widget.defaultColor ?? Colors.red,
+                      child: b.child,
+                      menuEntries: b.menuEntries,
+                      onSelectedMenuItem: b.onSelectedMenuItem,
+                    ),
                   ),
                 ),
               ))
@@ -236,6 +244,8 @@ class TimelineSlot extends StatelessWidget {
     @required this.pixelPerSeconds,
     @required this.duration,
     @required this.start,
+    this.menuEntries,
+    this.onSelectedMenuItem,
     this.color,
     this.child,
   }) : super(key: key);
@@ -245,6 +255,33 @@ class TimelineSlot extends StatelessWidget {
   final double start;
   final Color color;
   final Widget child;
+  final List<PopupMenuEntry> menuEntries;
+
+  /// optional callback when a user click on one of the [menuEntries]
+  final void Function(Object selectedItem) onSelectedMenuItem;
+
+  void _showCustomMenu(BuildContext context) async {
+    if (menuEntries != null) {
+      final RenderBox button = context.findRenderObject();
+      final RenderBox overlay = Overlay.of(context).context.findRenderObject();
+      final RelativeRect position = RelativeRect.fromRect(
+        Rect.fromPoints(
+          button.localToGlobal(Offset.zero, ancestor: overlay),
+          button.localToGlobal(button.size.bottomRight(Offset.zero),
+              ancestor: overlay),
+        ),
+        Offset.zero & overlay.size,
+      );
+
+      var result = await showMenu(
+          context: context,
+          items: menuEntries, //<PopupMenuEntry>[PlusMinusEntry()],
+          position: position);
+      if (onSelectedMenuItem != null) {
+        onSelectedMenuItem(result);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -253,11 +290,17 @@ class TimelineSlot extends StatelessWidget {
       child: SizedBox(
         width: duration.toDouble() * pixelPerSeconds,
         height: 100,
-        child: Card(
-          margin: EdgeInsets.all(1.0),
-          color: color,
-          elevation: 2,
-          child: child != null ? child : Container(),
+        child: Builder(
+          builder: (context) => GestureDetector(
+            onLongPress:
+                menuEntries == null ? null : () => _showCustomMenu(context),
+            child: Card(
+              margin: EdgeInsets.all(1.0),
+              color: color,
+              elevation: 2,
+              child: child != null ? child : Container(),
+            ),
+          ),
         ),
       ),
     );
