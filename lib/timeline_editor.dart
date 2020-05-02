@@ -108,7 +108,8 @@ class _TimelineEditorState extends State<TimelineEditor> {
                 widget.positionStream,
                 widget.blocksEvery,
                 widget.pixelPerSeconds,
-                widget.onPositionTap
+                widget.onPositionTap,
+                scale,
               ],
               builder: (ctx, constraints) {
                 if (pps == null || previousMaxWidth != constraints.maxWidth) {
@@ -126,19 +127,24 @@ class _TimelineEditorState extends State<TimelineEditor> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8.0),
-                            child: GestureDetector(
-                              onTapUp: _positionTap,
-                              child: Row(
-                                children: List.generate(
-                                    totalSlots,
-                                    (i) => SizedBox(
-                                        width:
-                                            pixelPerSeconds * finalBlocksEvery,
-                                        child: Text(secondsToString(
-                                            i * finalBlocksEvery)))).toList(),
-                              ),
+                          GestureDetector(
+                            onTapUp: _positionTap,
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 12.0),
+                              child: StreamBuilder<Object>(
+                                  stream: null,
+                                  builder: (context, snapshot) {
+                                    return Row(
+                                      children: List.generate(
+                                              totalSlots,
+                                              (i) => SizedBox(
+                                                  width: pixelPerSeconds *
+                                                      finalBlocksEvery,
+                                                  child: Text(secondsToString(
+                                                      i * finalBlocksEvery))))
+                                          .toList(),
+                                    );
+                                  }),
                             ),
                           ),
                           ...List<Widget>.generate(

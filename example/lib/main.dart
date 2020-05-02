@@ -47,7 +47,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    positionController = StreamController<double>();
+    positionController = StreamController<double>.broadcast();
     progressTimer = Timer.periodic(Duration(milliseconds: 350), positionUpdate);
     positionUpdate(null);
   }

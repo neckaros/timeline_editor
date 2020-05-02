@@ -1,3 +1,7 @@
+## 0.2.1
+* fix scaling
+
+
 ## 0.2.0
 Performance optimization
 * position now takes a stream to rebuild as little as possible
