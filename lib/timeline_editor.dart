@@ -67,7 +67,7 @@ class _TimelineEditorState extends State<TimelineEditor> {
     return widget.pixelPerSeconds ?? (width / widget.durationInSeconds);
   }
 
-  String secondsToString(int seconds) {
+  String secondsToString(double seconds) {
     var minutes = (seconds / 60).floor();
     var remainingSeconds = (seconds - (minutes * 60)).floor();
 
@@ -117,7 +117,7 @@ class _TimelineEditorState extends State<TimelineEditor> {
                 }
                 var pixelPerSeconds = pps * scale;
                 var finalBlocksEvery =
-                    max(widget.blocksEvery, (50 / pixelPerSeconds).ceil());
+                    max(widget.blocksEvery, (70 / pixelPerSeconds));
                 var totalSlots =
                     (widget.durationInSeconds / finalBlocksEvery).floor();
                 return SingleChildScrollView(
@@ -129,22 +129,48 @@ class _TimelineEditorState extends State<TimelineEditor> {
                         children: <Widget>[
                           GestureDetector(
                             onTapUp: _positionTap,
-                            child: Padding(
-                              padding: const EdgeInsets.only(bottom: 12.0),
-                              child: StreamBuilder<Object>(
-                                  stream: null,
-                                  builder: (context, snapshot) {
-                                    return Row(
-                                      children: List.generate(
-                                              totalSlots,
+                            child: Stack(
+                              children: <Widget>[
+                                ...List.generate(
+                                    totalSlots + 1,
+                                    (i) => Positioned(
+                                          left: i *
+                                              pixelPerSeconds *
+                                              finalBlocksEvery,
+                                          top: 8,
+                                          bottom: 8,
+                                          child: Container(
+                                            color:
+                                                Theme.of(context).brightness ==
+                                                        Brightness.dark
+                                                    ? Colors.white60
+                                                    : Colors.black87,
+                                            width: 1,
+                                          ),
+                                        )),
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                      bottom: 8.0, top: 8.0),
+                                  child: StreamBuilder<Object>(
+                                      stream: null,
+                                      builder: (context, snapshot) {
+                                        return Row(
+                                          children: List.generate(
+                                              totalSlots + 1,
                                               (i) => SizedBox(
                                                   width: pixelPerSeconds *
                                                       finalBlocksEvery,
-                                                  child: Text(secondsToString(
-                                                      i * finalBlocksEvery))))
-                                          .toList(),
-                                    );
-                                  }),
+                                                  child: Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                            left: 8.0),
+                                                    child: Text(secondsToString(
+                                                        i * finalBlocksEvery)),
+                                                  ))).toList(),
+                                        );
+                                      }),
+                                ),
+                              ],
                             ),
                           ),
                           ...List<Widget>.generate(

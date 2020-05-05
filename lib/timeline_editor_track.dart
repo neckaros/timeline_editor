@@ -86,6 +86,9 @@ class TimelineEditorTrack extends StatefulWidget {
   final List<TimelineEditorContinuousBox> continuousBoxes;
   final double pixelsPerSeconds;
 
+  /// height of this track
+  final double trackHeight;
+
   final double durationInSeconds;
 
   final Color defaultColor;
@@ -95,6 +98,7 @@ class TimelineEditorTrack extends StatefulWidget {
       @required this.boxes,
       @required this.pixelsPerSeconds,
       @required this.durationInSeconds,
+      this.trackHeight = 100,
       this.defaultColor})
       : continuousBoxes = null,
         super(key: key);
@@ -104,6 +108,7 @@ class TimelineEditorTrack extends StatefulWidget {
       @required this.continuousBoxes,
       @required this.pixelsPerSeconds,
       @required this.durationInSeconds,
+      this.trackHeight = 100,
       this.defaultColor})
       : boxes = null;
 
@@ -222,6 +227,7 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
                         b.onMovedEnd == null ? null : (_) => b.onMovedEnd(),
                     child: TimelineSlot(
                       pixelPerSeconds: widget.pixelsPerSeconds,
+                      height: widget.trackHeight,
                       duration: b.duration,
                       start: b.start,
                       color: b.color ?? widget.defaultColor ?? Colors.red,
@@ -244,6 +250,7 @@ class TimelineSlot extends StatelessWidget {
     @required this.pixelPerSeconds,
     @required this.duration,
     @required this.start,
+    @required this.height,
     this.menuEntries,
     this.onSelectedMenuItem,
     this.color,
@@ -251,6 +258,7 @@ class TimelineSlot extends StatelessWidget {
   }) : super(key: key);
 
   final double pixelPerSeconds;
+  final double height;
   final double duration;
   final double start;
   final Color color;
@@ -289,7 +297,7 @@ class TimelineSlot extends StatelessWidget {
       padding: EdgeInsets.only(left: start.toDouble() * pixelPerSeconds),
       child: SizedBox(
         width: duration.toDouble() * pixelPerSeconds,
-        height: 100,
+        height: height ?? 100,
         child: Builder(
           builder: (context) => GestureDetector(
             onLongPress:

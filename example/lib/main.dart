@@ -10,13 +10,18 @@ class MyApp extends StatefulWidget {
   _MyAppState createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   double box1Start = 0;
   double box2Start = 120;
   bool deleted = false;
   double position = 0;
   StreamController<double> positionController;
   Timer progressTimer;
+
+  double _trackHeight = 100;
+
+  AnimationController _controller;
+  Animation<double> _animation;
 
   void updateBox1(double seconds) {
     if (box1Start + seconds < 0) {
@@ -49,6 +54,12 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     positionController = StreamController<double>.broadcast();
     progressTimer = Timer.periodic(Duration(milliseconds: 350), positionUpdate);
+    _controller =
+        AnimationController(vsync: this, duration: Duration(seconds: 2));
+    _animation = Tween(begin: 100.0, end: 200.0).animate(_controller)
+      ..addListener(() {
+        setState(() => _trackHeight = _animation.value);
+      });
     positionUpdate(null);
   }
 
@@ -56,6 +67,8 @@ class _MyAppState extends State<MyApp> {
   void dispose() {
     progressTimer?.cancel();
     positionController?.close();
+
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -95,7 +108,22 @@ class _MyAppState extends State<MyApp> {
         ),
         body: Column(
           children: <Widget>[
-            Expanded(child: Center(child: Text('Timeline_editor example app'))),
+            Expanded(
+                child: Center(
+                    child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                const Text('Timeline_editor example app'),
+                RaisedButton(
+                  child: const Text('Change track height'),
+                  onPressed: () =>
+                      _controller.status == AnimationStatus.forward ||
+                              _controller.status == AnimationStatus.completed
+                          ? _controller.reverse()
+                          : _controller.forward(),
+                )
+              ],
+            ))),
             Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: TimelineEditor(
@@ -116,6 +144,7 @@ class _MyAppState extends State<MyApp> {
                           durationInSeconds: duration,
                         )
                       : TimelineEditorTrack.fromContinuous(
+                          trackHeight: _trackHeight,
                           continuousBoxes:
                               deleted ? [boxesContinuous[0]] : boxesContinuous,
                           pixelsPerSeconds: pps,

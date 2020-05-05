@@ -1,3 +1,7 @@
+## 0.2.2
+* better time indicators
+* height of track is not customizable
+
 ## 0.2.1
 * fix scaling
 
