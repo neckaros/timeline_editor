@@ -10,18 +10,18 @@ export './timeline_editor_track.dart';
 /// [pixelsPerSeconds] how much pixel takes a second
 /// [duration] of the timeline
 typedef TimelineEditorTrackBuilder = TimelineEditorTrack Function(
-    int trackNumber, double pixelsPerSeconds, double duration);
+    int trackNumber, double pixelsPerSeconds, Duration duration);
 
 /// Main timeline widget which contains the tracks
 class TimelineEditor extends StatefulWidget {
   /// number of tracks
   final int countTracks;
 
-  /// duration of the timeline in seconds
-  final double durationInSeconds;
+  /// duration of the timeline
+  final Duration duration;
 
   /// optional distance in seconds between each time indicator
-  final int blocksEvery;
+  final Duration blocksEvery;
 
   /// the builder for each track
   /// tou can use a [TimelineEditorTrack] or your custom track
@@ -40,11 +40,11 @@ class TimelineEditor extends StatefulWidget {
 
   const TimelineEditor({
     Key key,
-    @required this.durationInSeconds,
+    @required this.duration,
     @required this.trackBuilder,
     @required this.countTracks,
     this.positionStream,
-    this.blocksEvery = 5,
+    this.blocksEvery = const Duration(seconds: 5),
     this.pixelPerSeconds,
     this.onPositionTap,
   }) : super(key: key);
@@ -64,14 +64,29 @@ class _TimelineEditorState extends State<TimelineEditor> {
   }
 
   double computePPS(double width) {
-    return widget.pixelPerSeconds ?? (width / widget.durationInSeconds);
+    return widget.pixelPerSeconds ?? (width / widget.duration.inSeconds);
   }
 
-  String secondsToString(double seconds) {
-    var minutes = (seconds / 60).floor();
-    var remainingSeconds = (seconds - (minutes * 60)).floor();
+  String secondsToString(Duration duration, Duration totalDuration) {
+    var _duration = Duration(milliseconds: duration.inMilliseconds);
+    int weeks = _duration.inDays > 7 ? (_duration.inDays / 7).floor() : 0;
+    _duration = _duration - Duration(days: weeks * 7);
+    int days = _duration.inDays;
+    _duration = _duration - Duration(days: _duration.inDays);
+    int hours = _duration.inHours;
+    _duration = _duration - Duration(hours: _duration.inHours);
+    int minutes = _duration.inMinutes;
+    _duration = _duration - Duration(minutes: _duration.inMinutes);
+    int seconds = _duration.inSeconds;
 
-    return '${twoDigits(minutes)}:${twoDigits(remainingSeconds)}';
+    if (weeks > 1)
+      return '${weeks}w${days}d';
+    else if (days > 1)
+      return '${days}d ${hours}h';
+    else if (hours > 1)
+      return '${hours}h${twoDigits(minutes)}';
+    else
+      return '${twoDigits(minutes)}:${twoDigits(seconds)}';
   }
 
   void _onScaleStart(ScaleStartDetails details) {
@@ -102,7 +117,7 @@ class _TimelineEditorState extends State<TimelineEditor> {
           children: <Widget>[
             CachedLayoutBuilder(
               parentParameters: [
-                widget.durationInSeconds,
+                widget.duration.inSeconds,
                 widget.trackBuilder,
                 widget.countTracks,
                 widget.positionStream,
@@ -116,10 +131,12 @@ class _TimelineEditorState extends State<TimelineEditor> {
                   pps = computePPS(constraints.maxWidth);
                 }
                 var pixelPerSeconds = pps * scale;
-                var finalBlocksEvery =
-                    max(widget.blocksEvery, (70 / pixelPerSeconds));
+                var finalBlocksEvery = max(
+                    widget.blocksEvery.inMilliseconds / 1000,
+                    (70 / pixelPerSeconds));
                 var totalSlots =
-                    (widget.durationInSeconds / finalBlocksEvery).floor();
+                    ((widget.duration.inMilliseconds / 1000) / finalBlocksEvery)
+                        .floor();
                 return SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Stack(
@@ -158,14 +175,28 @@ class _TimelineEditorState extends State<TimelineEditor> {
                                           children: List.generate(
                                               totalSlots + 1,
                                               (i) => SizedBox(
-                                                  width: pixelPerSeconds *
-                                                      finalBlocksEvery,
+                                                  width: i == totalSlots
+                                                      ? null
+                                                      : pixelPerSeconds *
+                                                          finalBlocksEvery,
                                                   child: Padding(
                                                     padding:
                                                         const EdgeInsets.only(
                                                             left: 8.0),
-                                                    child: Text(secondsToString(
-                                                        i * finalBlocksEvery)),
+                                                    child: Text(
+                                                      secondsToString(
+                                                        Duration(
+                                                          milliseconds:
+                                                              ((i * finalBlocksEvery) *
+                                                                      1000)
+                                                                  .toInt(),
+                                                        ),
+                                                        widget.duration,
+                                                      ),
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodyText1,
+                                                    ),
                                                   ))).toList(),
                                         );
                                       }),
@@ -176,7 +207,7 @@ class _TimelineEditorState extends State<TimelineEditor> {
                           ...List<Widget>.generate(
                               widget.countTracks,
                               (i) => widget.trackBuilder(
-                                  i, pixelPerSeconds, widget.durationInSeconds))
+                                  i, pixelPerSeconds, widget.duration))
                         ],
                       ),
                       if (widget.positionStream != null)

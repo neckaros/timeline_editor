@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 /// a box to be displayed in a [TimelineEditorTrack] with a [start] and a [duration]
 class TimelineEditorBox {
   /// duration in seconds of the box
-  final double duration;
+  final Duration duration;
 
   /// the start time in seconds of this box
-  final double start;
+  final Duration start;
 
   /// optional  custom child to display in this box
   final Widget child;
@@ -21,11 +21,11 @@ class TimelineEditorBox {
   final void Function(Object selectedItem) onSelectedMenuItem;
 
   ///  optional callback when the box is tapped/clicked
-  final void Function(double start, double duration) onTap;
+  final void Function(Duration start, Duration duration) onTap;
 
   /// optional callback that will activate the
   /// possibility of moving this box
-  final void Function(double seconds) onMoved;
+  final void Function(Duration duration) onMoved;
 
   /// if [onMoved] is set this callback will be called when
   /// the user stop the move
@@ -45,7 +45,7 @@ class TimelineEditorBox {
 /// as the end will be the start of the next box of the timeline
 class TimelineEditorContinuousBox {
   /// the start time in seconds of this box
-  final double start;
+  final Duration start;
 
   /// the custom child to display in this box
   final Widget child;
@@ -60,11 +60,11 @@ class TimelineEditorContinuousBox {
   final void Function(Object selectedItem) onSelectedMenuItem;
 
   ///  optional callback when the box is tapped/clicked
-  final void Function(double start, double duration) onTap;
+  final void Function(Duration start, Duration duration) onTap;
 
   /// optional callback that will activate the
   /// possibility of moving this box
-  final void Function(double seconds) onMoved;
+  final void Function(Duration seconds) onMoved;
 
   /// if [onMoved] is set this callback will be called when
   /// the user stop the move
@@ -89,7 +89,7 @@ class TimelineEditorTrack extends StatefulWidget {
   /// height of this track
   final double trackHeight;
 
-  final double durationInSeconds;
+  final Duration duration;
 
   final Color defaultColor;
 
@@ -97,7 +97,7 @@ class TimelineEditorTrack extends StatefulWidget {
       {Key key,
       @required this.boxes,
       @required this.pixelsPerSeconds,
-      @required this.durationInSeconds,
+      @required this.duration,
       this.trackHeight = 100,
       this.defaultColor})
       : continuousBoxes = null,
@@ -107,7 +107,7 @@ class TimelineEditorTrack extends StatefulWidget {
       {Key key,
       @required this.continuousBoxes,
       @required this.pixelsPerSeconds,
-      @required this.durationInSeconds,
+      @required this.duration,
       this.trackHeight = 100,
       this.defaultColor})
       : boxes = null;
@@ -118,8 +118,6 @@ class TimelineEditorTrack extends StatefulWidget {
 
 class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
   List<TimelineEditorBox> boxes;
-
-  var _tapPosition;
 
   @override
   void initState() {
@@ -146,7 +144,7 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
       List<TimelineEditorBox> targetBoxes = List<TimelineEditorBox>();
       for (var box in sortedStart) {
         var duration = previous == null
-            ? widget.durationInSeconds - box.start
+            ? widget.duration - box.start
             : previous.start - box.start;
         previous = box;
         targetBoxes.insert(
@@ -167,43 +165,18 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
     }
   }
 
-  void _showCustomMenu(TimelineEditorBox box) async {
-    if (box.menuEntries != null) {
-      final RenderBox button = context.findRenderObject();
-      final RenderBox overlay = Overlay.of(context).context.findRenderObject();
-      final RelativeRect position = RelativeRect.fromRect(
-        Rect.fromPoints(
-          button.localToGlobal(Offset.zero, ancestor: overlay),
-          button.localToGlobal(button.size.bottomRight(Offset.zero),
-              ancestor: overlay),
-        ),
-        Offset.zero & overlay.size,
-      );
-
-      var result = await showMenu(
-          context: context,
-          items: box.menuEntries, //<PopupMenuEntry>[PlusMinusEntry()],
-          position: position);
-      if (box.onSelectedMenuItem != null) {
-        box.onSelectedMenuItem(result);
-      }
-    }
-  }
-
   double globalMoveSinceLastSend = 0;
   void _onDragUpdate(DragUpdateDetails details, TimelineEditorBox box) {
     if (box.onMoved != null) {
       globalMoveSinceLastSend += details.delta.dx;
       var numberOfSeconds = details.delta.dx / widget.pixelsPerSeconds;
-      if (box.start + numberOfSeconds < 0) {
-        numberOfSeconds = 0;
-      }
-      box.onMoved(numberOfSeconds);
+      var durationMove =
+          Duration(milliseconds: (numberOfSeconds * 1000).toInt());
+      if (box.start + durationMove < Duration.zero) {
+        box.onMoved(Duration.zero);
+      } else
+        box.onMoved(durationMove);
     }
-  }
-
-  void _storePosition(TapDownDetails details) {
-    _tapPosition = details.globalPosition;
   }
 
   @override
@@ -217,7 +190,6 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
                     onTap: b.onTap == null
                         ? null
                         : () => b.onTap(b.start, b.duration),
-                    onTapDown: _storePosition,
                     onHorizontalDragStart: b.onMoved == null
                         ? null
                         : (_) => globalMoveSinceLastSend = 0,
@@ -259,8 +231,8 @@ class TimelineSlot extends StatelessWidget {
 
   final double pixelPerSeconds;
   final double height;
-  final double duration;
-  final double start;
+  final Duration duration;
+  final Duration start;
   final Color color;
   final Widget child;
   final List<PopupMenuEntry> menuEntries;
@@ -294,9 +266,10 @@ class TimelineSlot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(left: start.toDouble() * pixelPerSeconds),
+      padding: EdgeInsets.only(
+          left: (start.inMilliseconds / 1000) * pixelPerSeconds),
       child: SizedBox(
-        width: duration.toDouble() * pixelPerSeconds,
+        width: (duration.inMilliseconds / 1000) * pixelPerSeconds,
         height: height ?? 100,
         child: Builder(
           builder: (context) => GestureDetector(

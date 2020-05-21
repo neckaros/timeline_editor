@@ -11,8 +11,8 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
-  double box1Start = 0;
-  double box2Start = 120;
+  Duration box1Start = Duration.zero;
+  Duration box2Start = Duration(seconds: 120);
   bool deleted = false;
   double position = 0;
   StreamController<double> positionController;
@@ -23,21 +23,21 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   AnimationController _controller;
   Animation<double> _animation;
 
-  void updateBox1(double seconds) {
-    if (box1Start + seconds < 0) {
-      seconds = -box1Start;
+  void updateBox1(Duration duration) {
+    if (box1Start + duration < Duration.zero) {
+      duration = -box1Start;
     }
     setState(() {
-      box1Start += seconds;
+      box1Start += duration;
     });
   }
 
-  void updateBox2(double seconds) {
-    if (box2Start + seconds < 0) {
-      seconds = -box2Start;
+  void updateBox2(Duration duration) {
+    if (box2Start + duration < Duration.zero) {
+      duration = -box2Start;
     }
     setState(() {
-      box2Start += seconds;
+      box2Start += duration;
     });
   }
 
@@ -76,7 +76,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     List<TimelineEditorContinuousBox> boxesContinuous = [
       TimelineEditorContinuousBox(
-        0,
+        Duration(),
         color: Colors.deepOrange,
         child: const Image(image: const AssetImage('assets/image2.jpg')),
       ),
@@ -134,23 +134,24 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                       ? TimelineEditorTrack(
                           defaultColor: Colors.green[700],
                           boxes: [
-                            TimelineEditorBox(box1Start, 100,
+                            TimelineEditorBox(box1Start, Duration(seconds: 100),
                                 onMoved: updateBox1,
                                 color: Colors.blue,
                                 onMovedEnd: () => print('end moved')),
-                            TimelineEditorBox(157, 80),
+                            TimelineEditorBox(
+                                Duration(seconds: 157), Duration(seconds: 80)),
                           ],
                           pixelsPerSeconds: pps,
-                          durationInSeconds: duration,
+                          duration: duration,
                         )
                       : TimelineEditorTrack.fromContinuous(
                           trackHeight: _trackHeight,
                           continuousBoxes:
                               deleted ? [boxesContinuous[0]] : boxesContinuous,
                           pixelsPerSeconds: pps,
-                          durationInSeconds: duration,
+                          duration: duration,
                         ),
-                  durationInSeconds: 300,
+                  duration: Duration(seconds: 300),
                 )),
           ],
         ),

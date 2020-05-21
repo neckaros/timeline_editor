@@ -1,3 +1,6 @@
+## 0.3.0
+* We now use duration instead of seconds ([Issue 1](https://github.com/neckaros/timeline_editor/issues/1))
+
 ## 0.2.2
 * better time indicators
 * height of track is not customizable

@@ -15,16 +15,18 @@ Early version of a timeline editor. Support:
 
 ### Installation
 
-Add `secure_application` as a dependency in your pubspec.yaml file ([what?](https://flutter.io/using-packages/)).
+Add `timeline_editor` as a dependency in your pubspec.yaml file ([what?](https://pub.dev/packages/timeline_editor#-installing-tab-)).
+
 
 ### Import
 
-Import secure_application:
+Import timeline_editor:
 ```dart
 import 'package:timeline_editor/timeline_editor.dart';
 ```
 
 ### widgets
+See [example](https://github.com/neckaros/timeline_editor/blob/master/example/lib/main.dart)
 ```dart
 
 TimelineEditor(
@@ -42,12 +44,12 @@ TimelineEditor(
                             TimelineEditorBox(157, 80),
                           ],
                           pixelsPerSeconds: pps,
-                          durationInSeconds: duration,
+                          duration: duration,
                         )
                       : TimelineEditorTrack.fromContinuous(
                           continuousBoxes:[
                             TimelineEditorContinuousBox(
-                                0,
+                                Duration.zero,
                                 color: Colors.deepOrange,
                                 child: const Image(image: const AssetImage('assets/image2.jpg')),
                             ),
@@ -70,9 +72,9 @@ TimelineEditor(
                             ),
                             ],
                           pixelsPerSeconds: pps,
-                          durationInSeconds: duration,
+                          duration: duration,
                         ),
-                  durationInSeconds: 300,
+                  duration: Duration(seconds: 300),
                 ))
 ```
 ## TimelineEditor
