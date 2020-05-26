@@ -23,7 +23,7 @@ class TimelineEditor extends StatefulWidget {
   final Duration duration;
 
   /// Timeline time text theme. By default we use Theme.of(context).textTheme.bodyText1
-  final TextTheme timelineTextTheme;
+  final TextStyle timelineTextStyle;
 
   /// Color used by the time separator in the timeline.
   /// By default we use Theme.of(context).brightness == Brightness.dark ? Colors.white60 : Colors.black87
@@ -52,7 +52,7 @@ class TimelineEditor extends StatefulWidget {
     @required this.duration,
     @required this.trackBuilder,
     @required this.countTracks,
-    this.timelineTextTheme,
+    this.timelineTextStyle,
     this.separatorColor,
     this.positionStream,
     this.blocksEvery = const Duration(seconds: 5),
@@ -135,6 +135,8 @@ class _TimelineEditorState extends State<TimelineEditor> {
                 widget.blocksEvery,
                 widget.pixelPerSeconds,
                 widget.onPositionTap,
+                widget.separatorColor,
+                widget.timelineTextStyle,
                 Theme.of(context).brightness,
                 scale,
               ],
@@ -169,11 +171,11 @@ class _TimelineEditorState extends State<TimelineEditor> {
                                           top: 8,
                                           bottom: 8,
                                           child: Container(
-                                            color:
-                                                Theme.of(context).brightness ==
+                                            color: widget.separatorColor ??
+                                                (Theme.of(context).brightness ==
                                                         Brightness.dark
                                                     ? Colors.white60
-                                                    : Colors.black87,
+                                                    : Colors.black87),
                                             width: 1,
                                           ),
                                         )),
@@ -206,7 +208,7 @@ class _TimelineEditorState extends State<TimelineEditor> {
                                                           widget.duration,
                                                         ),
                                                         style: widget
-                                                                .timelineTextTheme ??
+                                                                .timelineTextStyle ??
                                                             Theme.of(context)
                                                                 .textTheme
                                                                 .bodyText1),

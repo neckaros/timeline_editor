@@ -9,7 +9,7 @@ double durationToSeconds(Duration duration)
 class TimelineEditor extends StatefulWidget {
   ...
   /// Timeline time text theme. By default we use Theme.of(context).textTheme.bodyText1
-  final TextTheme timelineTextTheme;
+  final TextTheme timelineTextStyle;
 
   /// Color used by the time separator in the timeline.
   /// By default we use Theme.of(context).brightness == Brightness.dark ? Colors.white60 : Colors.black87
