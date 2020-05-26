@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:timeline_editor/timeline_editor_track.dart';
 
 import 'cahced_layout_builder.dart';
+import 'extensions.dart';
 export './timeline_editor_track.dart';
+export './extensions.dart';
 
 /// [trackNumber] the track numer in the timeline editor
 /// [pixelsPerSeconds] how much pixel takes a second
@@ -19,6 +21,13 @@ class TimelineEditor extends StatefulWidget {
 
   /// duration of the timeline
   final Duration duration;
+
+  /// Timeline time text theme. By default we use Theme.of(context).textTheme.bodyText1
+  final TextTheme timelineTextTheme;
+
+  /// Color used by the time separator in the timeline.
+  /// By default we use Theme.of(context).brightness == Brightness.dark ? Colors.white60 : Colors.black87
+  final Color separatorColor;
 
   /// optional distance in seconds between each time indicator
   final Duration blocksEvery;
@@ -43,6 +52,8 @@ class TimelineEditor extends StatefulWidget {
     @required this.duration,
     @required this.trackBuilder,
     @required this.countTracks,
+    this.timelineTextTheme,
+    this.separatorColor,
     this.positionStream,
     this.blocksEvery = const Duration(seconds: 5),
     this.pixelPerSeconds,
@@ -68,7 +79,7 @@ class _TimelineEditorState extends State<TimelineEditor> {
   }
 
   String secondsToString(Duration duration, Duration totalDuration) {
-    var _duration = Duration(milliseconds: duration.inMilliseconds);
+    var _duration = Duration(microseconds: duration.inMicroseconds);
     int weeks = _duration.inDays > 7 ? (_duration.inDays / 7).floor() : 0;
     _duration = _duration - Duration(days: weeks * 7);
     int days = _duration.inDays;
@@ -124,6 +135,7 @@ class _TimelineEditorState extends State<TimelineEditor> {
                 widget.blocksEvery,
                 widget.pixelPerSeconds,
                 widget.onPositionTap,
+                Theme.of(context).brightness,
                 scale,
               ],
               builder: (ctx, constraints) {
@@ -132,10 +144,10 @@ class _TimelineEditorState extends State<TimelineEditor> {
                 }
                 var pixelPerSeconds = pps * scale;
                 var finalBlocksEvery = max(
-                    widget.blocksEvery.inMilliseconds / 1000,
+                    durationToSeconds(widget.blocksEvery),
                     (70 / pixelPerSeconds));
                 var totalSlots =
-                    ((widget.duration.inMilliseconds / 1000) / finalBlocksEvery)
+                    (durationToSeconds(widget.duration) / finalBlocksEvery)
                         .floor();
                 return SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -184,19 +196,20 @@ class _TimelineEditorState extends State<TimelineEditor> {
                                                         const EdgeInsets.only(
                                                             left: 8.0),
                                                     child: Text(
-                                                      secondsToString(
-                                                        Duration(
-                                                          milliseconds:
-                                                              ((i * finalBlocksEvery) *
-                                                                      1000)
-                                                                  .toInt(),
+                                                        secondsToString(
+                                                          Duration(
+                                                            milliseconds:
+                                                                ((i * finalBlocksEvery) *
+                                                                        1000)
+                                                                    .toInt(),
+                                                          ),
+                                                          widget.duration,
                                                         ),
-                                                        widget.duration,
-                                                      ),
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodyText1,
-                                                    ),
+                                                        style: widget
+                                                                .timelineTextTheme ??
+                                                            Theme.of(context)
+                                                                .textTheme
+                                                                .bodyText1),
                                                   ))).toList(),
                                         );
                                       }),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:timeline_editor/extensions.dart';
 
 /// a box to be displayed in a [TimelineEditorTrack] with a [start] and a [duration]
 class TimelineEditorBox {
@@ -170,8 +171,7 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
     if (box.onMoved != null) {
       globalMoveSinceLastSend += details.delta.dx;
       var numberOfSeconds = details.delta.dx / widget.pixelsPerSeconds;
-      var durationMove =
-          Duration(milliseconds: (numberOfSeconds * 1000).toInt());
+      var durationMove = durationFromSeconds(numberOfSeconds);
       if (box.start + durationMove < Duration.zero) {
         box.onMoved(Duration.zero);
       } else
@@ -266,10 +266,10 @@ class TimelineSlot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(
-          left: (start.inMilliseconds / 1000) * pixelPerSeconds),
+      padding:
+          EdgeInsets.only(left: durationToSeconds(start) * pixelPerSeconds),
       child: SizedBox(
-        width: (duration.inMilliseconds / 1000) * pixelPerSeconds,
+        width: durationToSeconds(duration) * pixelPerSeconds,
         height: height ?? 100,
         child: Builder(
           builder: (context) => GestureDetector(
