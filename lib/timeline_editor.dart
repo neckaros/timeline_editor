@@ -75,7 +75,8 @@ class _TimelineEditorState extends State<TimelineEditor> {
   }
 
   double computePPS(double width) {
-    return widget.pixelPerSeconds ?? (width / widget.duration.inSeconds);
+    return widget.pixelPerSeconds ??
+        (width / durationToSeconds(widget.duration));
   }
 
   String secondsToString(Duration duration, Duration totalDuration) {
@@ -153,102 +154,115 @@ class _TimelineEditorState extends State<TimelineEditor> {
                         .floor();
                 return SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  child: Stack(
-                    children: <Widget>[
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          GestureDetector(
-                            onTapUp: _positionTap,
-                            child: Stack(
-                              children: <Widget>[
-                                ...List.generate(
-                                    totalSlots + 1,
-                                    (i) => Positioned(
-                                          left: i *
-                                              pixelPerSeconds *
-                                              finalBlocksEvery,
-                                          top: 8,
-                                          bottom: 8,
-                                          child: Container(
-                                            color: widget.separatorColor ??
-                                                (Theme.of(context).brightness ==
-                                                        Brightness.dark
-                                                    ? Colors.white60
-                                                    : Colors.black87),
-                                            width: 1,
-                                          ),
-                                        )),
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                      bottom: 8.0, top: 8.0),
-                                  child: StreamBuilder<Object>(
-                                      stream: null,
-                                      builder: (context, snapshot) {
-                                        return Row(
-                                          children: List.generate(
+                  child: SizedBox(
+                    width: constraints.maxWidth * scale,
+                    child: Stack(
+                      overflow: Overflow.clip,
+                      children: <Widget>[
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            GestureDetector(
+                              onTapUp: _positionTap,
+                              child: Stack(
+                                children: <Widget>[
+                                  ...List.generate(
+                                      totalSlots + 1,
+                                      (i) => Positioned(
+                                            left: i *
+                                                pixelPerSeconds *
+                                                finalBlocksEvery,
+                                            top: 8,
+                                            bottom: 8,
+                                            child: Container(
+                                              color: widget.separatorColor ??
+                                                  (Theme.of(context)
+                                                              .brightness ==
+                                                          Brightness.dark
+                                                      ? Colors.white60
+                                                      : Colors.black87),
+                                              width: 1,
+                                            ),
+                                          )),
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        bottom: 8.0, top: 8.0),
+                                    child: StreamBuilder<Object>(
+                                        stream: null,
+                                        builder: (context, snapshot) {
+                                          return Row(
+                                            children: List.generate(
                                               totalSlots + 1,
-                                              (i) => SizedBox(
-                                                  width: i == totalSlots
-                                                      ? null
-                                                      : pixelPerSeconds *
+                                              (i) => i == totalSlots
+                                                  ? Expanded(
+                                                      child: buildTextTime(
+                                                          i,
                                                           finalBlocksEvery,
-                                                  child: Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            left: 8.0),
-                                                    child: Text(
-                                                        secondsToString(
-                                                          Duration(
-                                                            milliseconds:
-                                                                ((i * finalBlocksEvery) *
-                                                                        1000)
-                                                                    .toInt(),
-                                                          ),
-                                                          widget.duration,
-                                                        ),
-                                                        style: widget
-                                                                .timelineTextStyle ??
-                                                            Theme.of(context)
-                                                                .textTheme
-                                                                .bodyText1),
-                                                  ))).toList(),
-                                        );
-                                      }),
-                                ),
-                              ],
+                                                          context),
+                                                    )
+                                                  : SizedBox(
+                                                      width: pixelPerSeconds *
+                                                          finalBlocksEvery,
+                                                      child: buildTextTime(
+                                                          i,
+                                                          finalBlocksEvery,
+                                                          context),
+                                                    ),
+                                            ).toList(),
+                                          );
+                                        }),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          ...List<Widget>.generate(
-                              widget.countTracks,
-                              (i) => widget.trackBuilder(
-                                  i, pixelPerSeconds, widget.duration))
-                        ],
-                      ),
-                      if (widget.positionStream != null)
-                        StreamBuilder<double>(
-                            stream: widget.positionStream,
-                            builder: (context, snapshot) {
-                              double position =
-                                  snapshot.data == null ? 0 : snapshot.data;
-                              return AnimatedPositioned(
-                                duration: Duration(milliseconds: 350),
-                                left: (position * pixelPerSeconds),
-                                top: 0,
-                                bottom: 0,
-                                child: Container(
-                                  color: Colors.red,
-                                  width: 2,
-                                ),
-                              );
-                            })
-                    ],
+                            ...List<Widget>.generate(
+                                widget.countTracks,
+                                (i) => widget.trackBuilder(
+                                    i, pixelPerSeconds, widget.duration))
+                          ],
+                        ),
+                        if (widget.positionStream != null)
+                          StreamBuilder<double>(
+                              stream: widget.positionStream,
+                              builder: (context, snapshot) {
+                                double position =
+                                    snapshot.data == null ? 0 : snapshot.data;
+                                return AnimatedPositioned(
+                                  duration: Duration(milliseconds: 350),
+                                  left: (position * pixelPerSeconds),
+                                  top: 0,
+                                  bottom: 0,
+                                  child: Container(
+                                    color: Colors.red,
+                                    width: 2,
+                                  ),
+                                );
+                              })
+                      ],
+                    ),
                   ),
                 );
               },
             )
           ],
         ),
+      ),
+    );
+  }
+
+  Padding buildTextTime(int i, double finalBlocksEvery, BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8.0),
+      child: Text(
+        secondsToString(
+          Duration(
+            milliseconds: ((i * finalBlocksEvery) * 1000).toInt(),
+          ),
+          widget.duration,
+        ),
+        style:
+            widget.timelineTextStyle ?? Theme.of(context).textTheme.bodyText1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

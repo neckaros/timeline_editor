@@ -25,6 +25,13 @@ Import timeline_editor:
 import 'package:timeline_editor/timeline_editor.dart';
 ```
 
+### Migrate from V2 to V3
+We now use Duration instead of seconds. To migrate you can use the helper functions to transform your seconds to Duration:
+```dart
+Duration durationFromSeconds(double seconds)
+double durationToSeconds(Duration duration)
+```
+
 ### widgets
 See [example](https://github.com/neckaros/timeline_editor/blob/master/example/lib/main.dart)
 ```dart

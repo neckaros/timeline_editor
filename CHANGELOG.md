@@ -1,3 +1,6 @@
+## 0.3.2
+* Fix scroll will overflow sometimes
+
 ## 0.3.1
 * Added helper to go from seconds double to Duration:
 ```dart
