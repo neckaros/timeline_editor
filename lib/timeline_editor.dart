@@ -25,6 +25,15 @@ class TimelineEditor extends StatefulWidget {
   /// Timeline time text theme. By default we use Theme.of(context).textTheme.bodyText1
   final TextStyle timelineTextStyle;
 
+  /// Opational: Convert duration to string for the timeline headers
+  final Widget Function(Duration duration, Duration totalDuration)
+      timeWidgetBuilder;
+
+  /// Optional size of the time display in the timeline.
+  /// Can be used if you have custom string that takes more than 70pixels
+  /// ignored if blocksEvery is set
+  final int timeWidgetExtent;
+
   /// Color used by the time separator in the timeline.
   /// By default we use Theme.of(context).brightness == Brightness.dark ? Colors.white60 : Colors.black87
   final Color separatorColor;
@@ -53,6 +62,8 @@ class TimelineEditor extends StatefulWidget {
     @required this.trackBuilder,
     @required this.countTracks,
     this.timelineTextStyle,
+    this.timeWidgetBuilder,
+    this.timeWidgetExtent = 70,
     this.separatorColor,
     this.positionStream,
     this.blocksEvery = const Duration(seconds: 5),
@@ -103,11 +114,9 @@ class _TimelineEditorState extends State<TimelineEditor> {
 
   void _onScaleStart(ScaleStartDetails details) {
     previousScale = scale;
-    print('=$scale=');
   }
 
   void _onScaleUpdate(ScaleUpdateDetails details) {
-    print('=$previousScale + ${details.scale}=');
     var newScale = previousScale * details.scale;
     if (newScale < 1) newScale = 1;
     setState(() => scale = newScale);
@@ -148,7 +157,7 @@ class _TimelineEditorState extends State<TimelineEditor> {
                 var pixelPerSeconds = pps * scale;
                 var finalBlocksEvery = max(
                     durationToSeconds(widget.blocksEvery),
-                    (70 / pixelPerSeconds));
+                    ((widget.timeWidgetExtent ?? 70) / pixelPerSeconds));
                 var totalSlots =
                     (durationToSeconds(widget.duration) / finalBlocksEvery)
                         .floor();
@@ -251,13 +260,17 @@ class _TimelineEditorState extends State<TimelineEditor> {
   }
 
   Padding buildTextTime(int i, double finalBlocksEvery, BuildContext context) {
+    var pos = durationFromSeconds(i * finalBlocksEvery);
+    if (widget.timeWidgetBuilder != null)
+      return widget.timeWidgetBuilder(
+        pos,
+        widget.duration,
+      );
     return Padding(
       padding: const EdgeInsets.only(left: 8.0),
       child: Text(
         secondsToString(
-          Duration(
-            milliseconds: ((i * finalBlocksEvery) * 1000).toInt(),
-          ),
+          pos,
           widget.duration,
         ),
         style:

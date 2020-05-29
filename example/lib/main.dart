@@ -15,6 +15,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   Duration box2Start = Duration(seconds: 120);
   bool deleted = false;
   double position = 0;
+  bool customTimeString = false;
   StreamController<double> positionController;
   Timer progressTimer;
 
@@ -121,12 +122,27 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                               _controller.status == AnimationStatus.completed
                           ? _controller.reverse()
                           : _controller.forward(),
-                )
+                ),
+                SwitchListTile(
+                    title: Text('Custom time string'),
+                    value: customTimeString,
+                    onChanged: (value) =>
+                        setState(() => customTimeString = value)),
               ],
             ))),
             Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: TimelineEditor(
+                  timeWidgetExtent: customTimeString ? 100 : null,
+                  timeWidgetBuilder: customTimeString
+                      ? (d, t) => Padding(
+                            padding: const EdgeInsets.only(left: 8.0),
+                            child: Text(
+                              '${d.inSeconds}/${t.inSeconds}',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          )
+                      : null,
                   onPositionTap: (s) => position = s,
                   positionStream: positionController.stream,
                   countTracks: 2,

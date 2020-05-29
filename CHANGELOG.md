@@ -1,3 +1,20 @@
+## 0.3.4
+### Fix
+* Fix too much logs ([Issue 5](https://github.com/neckaros/timeline_editor/issues/5))
+### Enhancements
+* You can now provide your custom time widget ([Request 3](https://github.com/neckaros/timeline_editor/issues/3)):
+```dart
+TimelineEditor(
+  timeWidgetExtent: 100,
+  timeWidgetBuilder: (d, t) => Padding(
+            padding: const EdgeInsets.only(left: 8.0),
+            child: Text(
+              '${d.inSeconds}/${t.inSeconds}',
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+```
+
 ## 0.3.2
 * Fix scroll will overflow sometimes
 
