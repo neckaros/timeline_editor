@@ -1,18 +1,24 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:linked_scroll_controller/linked_scroll_controller.dart';
+import 'package:timeline_editor/timeline_editor_scale_controller.dart';
 import 'package:timeline_editor/timeline_editor_track.dart';
 
 import 'cahced_layout_builder.dart';
 import 'extensions.dart';
 export './timeline_editor_track.dart';
 export './extensions.dart';
+export './timeline_editor_scale_controller.dart';
 
 /// [trackNumber] the track numer in the timeline editor
 /// [pixelsPerSeconds] how much pixel takes a second
 /// [duration] of the timeline
 typedef TimelineEditorTrackBuilder = TimelineEditorTrack Function(
-    int trackNumber, double pixelsPerSeconds, Duration duration);
+    int trackNumber,
+    double pixelsPerSeconds,
+    Duration duration,
+    LinkedScrollControllerGroup scrollControllers);
 
 /// Main timeline widget which contains the tracks
 class TimelineEditor extends StatefulWidget {
@@ -29,10 +35,19 @@ class TimelineEditor extends StatefulWidget {
   final Widget Function(Duration duration, Duration totalDuration)
       timeWidgetBuilder;
 
-  /// Optional size of the time display in the timeline.
-  /// Can be used if you have custom string that takes more than 70pixels
+  /// Optional hright of the time bar displayed on top of the timeline.
+  /// default to 30
+  final double timeHeight;
+
+  /// Optional minimum size of the time display in the timeline.
+  /// Can be used if you have custom string that takes more/less than the default 70pixels
   /// ignored if blocksEvery is set
-  final int timeWidgetExtent;
+  final double minimumTimeWidgetExtent;
+
+  /// Optional argument to force the spacing between each time widget
+  /// by default we will optimize as best fitted by the [minimumTimeWidgetExtent] while keeping round number:
+  /// one every seconds, 5 seconds, ten seconds, minutes, days, weeks, month years
+  final Duration timeWidgetEvery;
 
   /// Color used by the time separator in the timeline.
   /// By default we use Theme.of(context).brightness == Brightness.dark ? Colors.white60 : Colors.black87
@@ -52,9 +67,11 @@ class TimelineEditor extends StatefulWidget {
   /// user whant to switch to a time position in seconds
   final void Function(double position) onPositionTap;
 
-  /// option initial number of pixels per seconds
-  /// if not set the timeline will initially fit the screen
-  final int pixelPerSeconds;
+  /// scale controller use to
+  /// manually set scale
+  /// get updates of scale
+  /// set min & max scale
+  final TimelineEditorScaleController scaleController;
 
   const TimelineEditor({
     Key key,
@@ -63,11 +80,13 @@ class TimelineEditor extends StatefulWidget {
     @required this.countTracks,
     this.timelineTextStyle,
     this.timeWidgetBuilder,
-    this.timeWidgetExtent = 70,
+    this.scaleController,
+    this.timeWidgetEvery,
+    this.timeHeight = 30,
+    this.minimumTimeWidgetExtent = 70,
     this.separatorColor,
     this.positionStream,
     this.blocksEvery = const Duration(seconds: 5),
-    this.pixelPerSeconds,
     this.onPositionTap,
   }) : super(key: key);
   @override
@@ -76,8 +95,27 @@ class TimelineEditor extends StatefulWidget {
 
 class _TimelineEditorState extends State<TimelineEditor> {
   double scale = 1;
+  double widgetWidth;
   double previousScale;
   double pps;
+  double timeBlockSize;
+
+  Duration _timeUnderFocal;
+  double scaleFocal;
+
+  double get scaledPixelPerSeconds => (pps ?? 1) * scale;
+
+  TimelineEditorScaleController _ownScaleController;
+  TimelineEditorScaleController get scaleController {
+    if (widget.scaleController == null && _ownScaleController == null)
+      _ownScaleController = TimelineEditorScaleController();
+
+    return widget.scaleController ?? _ownScaleController;
+  }
+
+  ScrollController scrollController;
+  ScrollController scrollController2;
+  LinkedScrollControllerGroup _controllers;
 
   double previousMaxWidth;
   String twoDigits(int n) {
@@ -85,9 +123,34 @@ class _TimelineEditorState extends State<TimelineEditor> {
     return "0$n";
   }
 
-  double computePPS(double width) {
-    return widget.pixelPerSeconds ??
-        (width / durationToSeconds(widget.duration));
+  void updateTimeBlockSize(double displayWidth) {
+    if (widget.timeWidgetEvery != null) {
+      timeBlockSize =
+          widget.timeWidgetEvery.inSecondsAsDouble * scaledPixelPerSeconds;
+    } else {
+      var targetNumberOfTimeWidget =
+          displayWidth / (widget.minimumTimeWidgetExtent ?? 70);
+      var targetDurationOfTimeWidget = durationFromSeconds(
+          displayWidth / scaledPixelPerSeconds / targetNumberOfTimeWidget);
+      if (targetDurationOfTimeWidget.inSeconds < 5)
+        timeBlockSize = 5 * scaledPixelPerSeconds;
+      else if (targetDurationOfTimeWidget.inSeconds < 10)
+        timeBlockSize = 10 * scaledPixelPerSeconds;
+      else if (targetDurationOfTimeWidget.inSeconds < 30)
+        timeBlockSize = 30 * scaledPixelPerSeconds;
+      else if (targetDurationOfTimeWidget.inMinutes < 1)
+        timeBlockSize = 60 * scaledPixelPerSeconds;
+      else if (targetDurationOfTimeWidget.inMinutes < 60)
+        timeBlockSize = (targetDurationOfTimeWidget.inMinutes + 1) *
+            60 *
+            scaledPixelPerSeconds;
+    }
+  }
+
+  void computePPS(double width) {
+    widgetWidth = width;
+    pps = widgetWidth / durationToSeconds(widget.duration);
+    updateTimeBlockSize(width);
   }
 
   String secondsToString(Duration duration, Duration totalDuration) {
@@ -114,18 +177,52 @@ class _TimelineEditorState extends State<TimelineEditor> {
 
   void _onScaleStart(ScaleStartDetails details) {
     previousScale = scale;
+    _timeUnderFocal = durationFromSeconds(
+        (details.focalPoint.dx + scrollController.offset) / pps / scale);
   }
 
   void _onScaleUpdate(ScaleUpdateDetails details) {
     var newScale = previousScale * details.scale;
     if (newScale < 1) newScale = 1;
-    setState(() => scale = newScale);
+    scaleController.setScale(newScale);
   }
 
-  void _positionTap(TapUpDetails details) {
-    var pixelPerSeconds = pps * scale;
-    var secondsClick = details.localPosition.dx / pixelPerSeconds;
-    widget.onPositionTap?.call(secondsClick);
+  void _onScaleEnd(ScaleEndDetails details) {
+    previousScale = null;
+    _timeUnderFocal = null;
+  }
+
+  @override
+  void didUpdateWidget(TimelineEditor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.duration != widget.duration) {
+      computePPS(previousMaxWidth);
+      setState(() {});
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _controllers = LinkedScrollControllerGroup();
+    scrollController = _controllers.addAndGet();
+    scrollController2 = _controllers.addAndGet();
+    scaleController.scaleUpdates.listen((s) {
+      if (scale != s) {
+        setState(() => scale = s);
+        updateTimeBlockSize(widgetWidth);
+        var offset = _controllers.offset;
+        _controllers.resetScroll();
+        _controllers.jumpTo(offset);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    scrollController.dispose();
+    _ownScaleController?.dispose();
+    super.dispose();
   }
 
   @override
@@ -133,149 +230,116 @@ class _TimelineEditorState extends State<TimelineEditor> {
     return GestureDetector(
       onScaleStart: _onScaleStart,
       onScaleUpdate: _onScaleUpdate,
-      child: Container(
-        child: Column(
-          children: <Widget>[
-            CachedLayoutBuilder(
-              parentParameters: [
-                widget.duration.inSeconds,
-                widget.trackBuilder,
-                widget.countTracks,
-                widget.positionStream,
-                widget.blocksEvery,
-                widget.pixelPerSeconds,
-                widget.onPositionTap,
-                widget.separatorColor,
-                widget.timelineTextStyle,
-                Theme.of(context).brightness,
-                scale,
-              ],
-              builder: (ctx, constraints) {
-                if (pps == null || previousMaxWidth != constraints.maxWidth) {
-                  pps = computePPS(constraints.maxWidth);
-                }
-                var pixelPerSeconds = pps * scale;
-                var finalBlocksEvery = max(
-                    durationToSeconds(widget.blocksEvery),
-                    ((widget.timeWidgetExtent ?? 70) / pixelPerSeconds));
-                var totalSlots =
-                    (durationToSeconds(widget.duration) / finalBlocksEvery)
-                        .floor();
-                return SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: SizedBox(
-                    width: constraints.maxWidth * scale,
-                    child: Stack(
-                      overflow: Overflow.clip,
-                      children: <Widget>[
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            GestureDetector(
-                              onTapUp: _positionTap,
-                              child: Stack(
-                                children: <Widget>[
-                                  ...List.generate(
-                                      totalSlots + 1,
-                                      (i) => Positioned(
-                                            left: i *
-                                                pixelPerSeconds *
-                                                finalBlocksEvery,
-                                            top: 8,
-                                            bottom: 8,
-                                            child: Container(
-                                              color: widget.separatorColor ??
-                                                  (Theme.of(context)
-                                                              .brightness ==
-                                                          Brightness.dark
-                                                      ? Colors.white60
-                                                      : Colors.black87),
-                                              width: 1,
-                                            ),
-                                          )),
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        bottom: 8.0, top: 8.0),
-                                    child: StreamBuilder<Object>(
-                                        stream: null,
-                                        builder: (context, snapshot) {
-                                          return Row(
-                                            children: List.generate(
-                                              totalSlots + 1,
-                                              (i) => i == totalSlots
-                                                  ? Expanded(
-                                                      child: buildTextTime(
-                                                          i,
-                                                          finalBlocksEvery,
-                                                          context),
-                                                    )
-                                                  : SizedBox(
-                                                      width: pixelPerSeconds *
-                                                          finalBlocksEvery,
-                                                      child: buildTextTime(
-                                                          i,
-                                                          finalBlocksEvery,
-                                                          context),
-                                                    ),
-                                            ).toList(),
-                                          );
-                                        }),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            ...List<Widget>.generate(
-                                widget.countTracks,
-                                (i) => widget.trackBuilder(
-                                    i, pixelPerSeconds, widget.duration))
-                          ],
-                        ),
-                        if (widget.positionStream != null)
-                          StreamBuilder<double>(
-                              stream: widget.positionStream,
-                              builder: (context, snapshot) {
-                                double position =
-                                    snapshot.data == null ? 0 : snapshot.data;
-                                return AnimatedPositioned(
-                                  duration: Duration(milliseconds: 350),
-                                  left: (position * pixelPerSeconds),
-                                  top: 0,
-                                  bottom: 0,
-                                  child: Container(
-                                    color: Colors.red,
-                                    width: 2,
-                                  ),
-                                );
-                              })
-                      ],
-                    ),
-                  ),
-                );
-              },
-            )
+      onScaleEnd: _onScaleEnd,
+      child: CachedLayoutBuilder(
+          parentParameters: [
+            widget.duration.inSeconds,
+            widget.trackBuilder,
+            widget.countTracks,
+            widget.positionStream,
+            widget.blocksEvery,
+            widget.onPositionTap,
+            widget.separatorColor,
+            widget.timelineTextStyle,
+            Theme.of(context).brightness,
+            scale,
           ],
-        ),
-      ),
+          builder: (ctx, constraints) {
+            if (pps == null || previousMaxWidth != constraints.maxWidth) {
+              computePPS(constraints.maxWidth);
+            }
+
+            var totalTimeSlots = ((widgetWidth * scale) / timeBlockSize).ceil();
+            var totalFullTimeSlots =
+                ((widgetWidth * scale) / timeBlockSize).floor();
+            var lastTimeBlockSize =
+                (((widgetWidth * scale) / timeBlockSize) - totalFullTimeSlots) *
+                    timeBlockSize;
+
+            return Container(
+              child: Column(
+                children: <Widget>[
+                  Container(
+                    height: widget.timeHeight,
+                    child: ListView.builder(
+                        key: Key('timelineeditor-times'),
+                        controller: scrollController,
+                        scrollDirection: Axis.horizontal,
+                        itemCount: totalTimeSlots,
+                        itemBuilder: (context, index) {
+                          return buildTextTime(
+                              index,
+                              scaledPixelPerSeconds,
+                              index <= totalFullTimeSlots - 1
+                                  ? timeBlockSize
+                                  : lastTimeBlockSize,
+                              context);
+                        }),
+                  ),
+                  Container(
+                    height: widget.timeHeight,
+                    child: ListView.builder(
+                        key: Key('timelineeditor-times2'),
+                        controller: scrollController2,
+                        scrollDirection: Axis.horizontal,
+                        itemCount: totalTimeSlots,
+                        itemBuilder: (context, index) {
+                          return buildTextTime(
+                              index,
+                              scaledPixelPerSeconds,
+                              index <= totalFullTimeSlots - 1
+                                  ? timeBlockSize
+                                  : lastTimeBlockSize,
+                              context);
+                        }),
+                  ),
+                  ...List.generate(
+                      widget.countTracks,
+                      (index) => widget.trackBuilder(
+                          index,
+                          scaledPixelPerSeconds,
+                          widget.duration,
+                          _controllers)),
+                ],
+              ),
+            );
+          }),
     );
   }
 
-  Padding buildTextTime(int i, double finalBlocksEvery, BuildContext context) {
-    var pos = durationFromSeconds(i * finalBlocksEvery);
+  Widget buildTextTime(int i, double scaledPixelsPerSeconds,
+      double finalBlocksEvery, BuildContext context) {
+    var pos =
+        durationFromSeconds(i * finalBlocksEvery / scaledPixelsPerSeconds);
     if (widget.timeWidgetBuilder != null)
       return widget.timeWidgetBuilder(
         pos,
         widget.duration,
       );
-    return Padding(
-      padding: const EdgeInsets.only(left: 8.0),
-      child: Text(
-        secondsToString(
-          pos,
-          widget.duration,
-        ),
-        style:
-            widget.timelineTextStyle ?? Theme.of(context).textTheme.bodyText1,
-        overflow: TextOverflow.ellipsis,
+    return SizedBox(
+      width: finalBlocksEvery,
+      child: Row(
+        children: <Widget>[
+          Container(
+            color: Colors.black,
+            width: 2,
+          ),
+          Flexible(
+            fit: FlexFit.loose,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 4.0),
+              child: Text(
+                secondsToString(
+                  pos,
+                  widget.duration,
+                ),
+                style: widget.timelineTextStyle ??
+                    Theme.of(context).textTheme.bodyText1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

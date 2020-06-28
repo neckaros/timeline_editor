@@ -4,11 +4,13 @@ version: 0.3.4
 homepage: https://github.com/neckaros/timeline_editor
 
 environment:
-  sdk: ">=2.3.0 <3.0.0"
+  sdk: ">=2.7.0 <3.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
+  linked_scroll_controller: ^0.1.2
+  rxdart: ^0.24.1
 
 dev_dependencies:
   flutter_test:

@@ -11,35 +11,54 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
-  Duration box1Start = Duration.zero;
-  Duration box2Start = Duration(seconds: 120);
+  Duration totalDuration = Duration(seconds: 600);
+  Duration box1Start = Duration(seconds: 30);
+  Duration box1Duration = Duration(seconds: 50);
+  bool box1Selected = false;
+  Duration box2Start = Duration(seconds: 100);
+  Duration box2Duration = Duration(seconds: 180);
+  bool box2Selected = false;
   bool deleted = false;
   double position = 0;
   bool customTimeString = false;
   StreamController<double> positionController;
   Timer progressTimer;
+  TimelineEditorScaleController scaleController;
+
+  double scale;
 
   double _trackHeight = 100;
 
   AnimationController _controller;
   Animation<double> _animation;
 
-  void updateBox1(Duration duration) {
-    if (box1Start + duration < Duration.zero) {
-      duration = -box1Start;
+  void moveBox1(Duration newStart) {
+    if (box1Start + newStart < Duration.zero) {
+      newStart = Duration.zero;
     }
-    setState(() {
-      box1Start += duration;
-    });
+    if (box1Start + newStart + box1Duration < box2Start)
+      setState(() {
+        box1Start += newStart;
+      });
   }
 
-  void updateBox2(Duration duration) {
-    if (box2Start + duration < Duration.zero) {
-      duration = -box2Start;
-    }
-    setState(() {
-      box2Start += duration;
-    });
+  void moveBox1End(Duration move) {
+    if (box1Start + box1Duration + move < box2Start)
+      setState(() => box1Duration = box1Duration + move);
+  }
+
+  void moveBox2(Duration startMove) {
+    var newStart = box2Start + startMove;
+    if (box1Start + box1Duration < newStart &&
+        newStart + box2Duration < totalDuration)
+      setState(() {
+        box2Start = newStart;
+      });
+  }
+
+  void moveBox2End(Duration move) {
+    if (box2Start + box2Duration + move < totalDuration)
+      setState(() => box2Duration = box2Duration + move);
   }
 
   void positionUpdate(Timer timer) {
@@ -53,6 +72,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    scaleController = TimelineEditorScaleController();
     positionController = StreamController<double>.broadcast();
     progressTimer = Timer.periodic(Duration(milliseconds: 350), positionUpdate);
     _controller =
@@ -66,6 +86,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
 
   @override
   void dispose() {
+    scaleController.dispose();
     progressTimer?.cancel();
     positionController?.close();
 
@@ -75,32 +96,6 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    List<TimelineEditorContinuousBox> boxesContinuous = [
-      TimelineEditorContinuousBox(
-        Duration(),
-        color: Colors.deepOrange,
-        child: const Image(image: const AssetImage('assets/image2.jpg')),
-      ),
-      TimelineEditorContinuousBox(
-        box2Start,
-        menuEntries: [
-          PopupMenuItem<String>(child: Text('Delete'), value: 'deleted')
-        ],
-        onMoved: updateBox2,
-        onSelectedMenuItem: (v) {
-          print('Selected: $v');
-          if (v == "deleted")
-            setState(() {
-              deleted = true;
-            });
-        },
-        onTap: (start, duration) =>
-            print('tapped for $start to ${start + duration}'),
-        color: Colors.black,
-        child: const Image(image: const AssetImage('assets/image.jpg')),
-      ),
-    ];
-
     return MaterialApp(
       darkTheme: ThemeData.dark(),
       home: Scaffold(
@@ -115,6 +110,12 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 const Text('Timeline_editor example app'),
+                StreamBuilder<double>(
+                    stream: scaleController.scaleUpdates,
+                    initialData: 1,
+                    builder: (context, snapshot) {
+                      return Text('Current scale: ' + snapshot.data.toString());
+                    }),
                 RaisedButton(
                   child: const Text('Change track height'),
                   onPressed: () =>
@@ -133,7 +134,8 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
             Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: TimelineEditor(
-                  timeWidgetExtent: customTimeString ? 100 : null,
+                  scaleController: scaleController,
+                  minimumTimeWidgetExtent: customTimeString ? 100 : null,
                   timeWidgetBuilder: customTimeString
                       ? (d, t) => Padding(
                             padding: const EdgeInsets.only(left: 8.0),
@@ -145,29 +147,43 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                       : null,
                   onPositionTap: (s) => position = s,
                   positionStream: positionController.stream,
-                  countTracks: 2,
-                  trackBuilder: (track, pps, duration) => track == 1
-                      ? TimelineEditorTrack(
-                          defaultColor: Colors.green[700],
-                          boxes: [
-                            TimelineEditorBox(box1Start, Duration(seconds: 100),
-                                onMoved: updateBox1,
-                                color: Colors.blue,
-                                onMovedEnd: () => print('end moved')),
-                            TimelineEditorBox(
-                                Duration(seconds: 157), Duration(seconds: 80)),
+                  countTracks: 1,
+                  trackBuilder: (track, pps, duration, scrollControllers) =>
+                      TimelineEditorTrack(
+                    key: Key('separated'),
+                    scrollControllers: scrollControllers,
+                    defaultColor: Colors.green[700],
+                    boxes: [
+                      TimelineEditorCard(
+                        box1Start,
+                        duration: box1Duration,
+                        selected: box1Selected,
+                        onTap: () =>
+                            setState(() => box1Selected = !box1Selected),
+                        color: Colors.blue,
+                        onMovedDuration: moveBox1End,
+                        onMovedStart: moveBox1,
+                      ),
+                      TimelineEditorCard(box2Start,
+                          duration: box2Duration,
+                          menuEntries: [
+                            PopupMenuItem<String>(
+                                child: Text('Demo!'), value: 'demo')
                           ],
-                          pixelsPerSeconds: pps,
-                          duration: duration,
-                        )
-                      : TimelineEditorTrack.fromContinuous(
-                          trackHeight: _trackHeight,
-                          continuousBoxes:
-                              deleted ? [boxesContinuous[0]] : boxesContinuous,
-                          pixelsPerSeconds: pps,
-                          duration: duration,
-                        ),
-                  duration: Duration(seconds: 300),
+                          onSelectedMenuItem: (v) {
+                            print(v);
+                          },
+                          onMovedDuration: moveBox2End,
+                          onMovedStart: moveBox2,
+                          selected: box2Selected,
+                          onTap: () =>
+                              setState(() => box2Selected = !box2Selected),
+                          color: Colors.green),
+                    ],
+                    pixelsPerSeconds: pps,
+                    duration: duration,
+                  ),
+                  duration: totalDuration,
                 )),
           ],
         ),
