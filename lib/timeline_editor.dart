@@ -184,7 +184,7 @@ class _TimelineEditorState extends State<TimelineEditor> {
   }
 
   void _onScaleUpdate(double details) {
-    print("Details $details");
+    // print("Details $details");
     var newScale = previousScale * details; //.scale;
     if (newScale < 1) newScale = 1;
     scaleController.setScale(newScale);
@@ -238,9 +238,9 @@ class _TimelineEditorState extends State<TimelineEditor> {
       child: Listener(
         onPointerSignal: (PointerSignalEvent event) {
           if (event is PointerScrollEvent) {
-            print('x: ${event.position.dx}, y: ${event.position.dy}');
-            print('delta: ${event.delta}');
-            print('scroll delta: ${event.scrollDelta}');
+            // print('x: ${event.position.dx}, y: ${event.position.dy}');
+            // print('delta: ${event.delta}');
+            // print('scroll delta: ${event.scrollDelta}');
         _onScaleStart(event.position.dx);
 
             if (event.scrollDelta.dy > 0) {
