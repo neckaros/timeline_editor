@@ -136,6 +136,8 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                 child: TimelineEditor(
                   scaleController: scaleController,
                   minimumTimeWidgetExtent: customTimeString ? 100 : null,
+                  leadingWidgetBuilder: (index) => Center(child: RaisedButton(onPressed: (){},   child: Text("$index"))),
+                  timelineLeadingWidget: Center(child: Text("HEADDER")),
                   timeWidgetBuilder: customTimeString
                       ? (d, t) => Padding(
                             padding: const EdgeInsets.only(left: 8.0),
@@ -147,10 +149,11 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                       : null,
                   onPositionTap: (s) => position = s,
                   positionStream: positionController.stream,
-                  countTracks: 1,
+                  countTracks: 2,
+                  
                   trackBuilder: (track, pps, duration, scrollControllers) =>
                       TimelineEditorTrack(
-                    key: Key('separated'),
+                    // key: Key('separated'),
                     scrollControllers: scrollControllers,
                     defaultColor: Colors.green[700],
                     boxes: [
