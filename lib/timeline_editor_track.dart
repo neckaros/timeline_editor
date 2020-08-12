@@ -325,3 +325,13 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
     );
   }
 }
+
+// class TimelineLeading extends StatelessWidget {
+//   final double trackHeight;
+//   final Widget child;
+//   const TimelineLeading({Key key, this.trackHeight, this.child}) : super(key: key);
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container();
+//   }
+// }
