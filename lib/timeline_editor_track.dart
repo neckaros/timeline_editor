@@ -253,7 +253,7 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
   void setup() {
     List<ITimelineEditorCard> targetBoxes = List<ITimelineEditorCard>();
 
-    if (widget.boxes != null) {
+    if (widget.boxes != null && widget.boxes.length > 0) {
       var sortedStart = widget.boxes.toList();
       sortedStart.sort((a, b) => a.start.compareTo(b.start));
       var blankFirstBox = TimelineEditorEmptyCard(
