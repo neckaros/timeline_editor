@@ -95,7 +95,7 @@ class TimelineEditorCard extends ITimelineEditorCard {
             if (onMovedStart != null && selected)
               GestureDetector(
                 onHorizontalDragUpdate: (d) => onMovedStart(
-                    durationFromSeconds(d.delta.dx * pixelsPerSeconds)),
+                    durationFromSeconds(d.delta.dx / pixelsPerSeconds)),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: SizedBox(
