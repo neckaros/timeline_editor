@@ -20,6 +20,9 @@ class TimelineEditorCard extends ITimelineEditorCard {
   /// background color of this box
   final Color color;
 
+  /// optional border color when selected
+  final Color borderColor;
+
   /// optional [PopupMenuEntry] list to display if a user long press this box
   final List<PopupMenuEntry> menuEntries;
 
@@ -51,6 +54,7 @@ class TimelineEditorCard extends ITimelineEditorCard {
       this.onTap,
       this.child,
       this.color,
+      this.borderColor,
       this.menuEntries,
       this.onSelectedMenuItem,
       this.onMovedDuration,
@@ -81,7 +85,7 @@ class TimelineEditorCard extends ITimelineEditorCard {
               Positioned.fill(
                 child: Container(
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white, width: 6),
+                    border: Border.all(color: borderColor != null ? borderColor : Colors.white, width: 6),
                   ),
                 ),
               ),
@@ -95,7 +99,7 @@ class TimelineEditorCard extends ITimelineEditorCard {
                     height: 30,
                     width: 30,
                     child: Container(
-                      color: Colors.white,
+                      color: borderColor != null ? borderColor : Colors.white,
                       child: onMovedDurationIcon != null 
                       ? onMovedDurationIcon 
                       : Icon(
@@ -116,7 +120,7 @@ class TimelineEditorCard extends ITimelineEditorCard {
                     height: 30,
                     width: 30,
                     child: Container(
-                      color: Colors.white,
+                      color: borderColor != null ? borderColor : Colors.white,
                       child: onMovedStartIcon != null 
                       ? onMovedStartIcon 
                       : Icon(
@@ -139,7 +143,7 @@ class TimelineEditorCard extends ITimelineEditorCard {
                       return menuEntries;
                     },
                     child: Container(
-                      color: Colors.white,
+                      color: borderColor != null ? borderColor : Colors.white,
                       child: menuEntriesIcon != null 
                       ? menuEntriesIcon 
                       : Icon(
