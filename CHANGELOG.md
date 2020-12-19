@@ -2,6 +2,7 @@
 First preview version of the rewrite for better performance and:
 * Header for tracks
 * custom icons and
+Huge thanks to @argorain and @ritheshSalyan
 
 ## 0.3.4
 ### Fix
