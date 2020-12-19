@@ -1,3 +1,8 @@
+## 0.4.0-preview.1
+First preview version of the rewrite for better performance and:
+* Header for tracks
+* custom icons and
+
 ## 0.3.4
 ### Fix
 * Fix too much logs ([Issue 5](https://github.com/neckaros/timeline_editor/issues/5))
