@@ -311,32 +311,52 @@ class _TimelineEditorState extends State<TimelineEditor> {
                         ],
                       ),
                       Flexible(
-                        child: Column(
-                          children: <Widget>[
-                            Container(
-                              height: widget.timeHeight,
-                              child: ListView.builder(
-                                  key: Key('timelineeditor-times'),
-                                  controller: scrollController,
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: totalTimeSlots,
-                                  itemBuilder: (context, index) {
-                                    return buildTextTime(
+                        child: Stack(
+                          children: [
+                            Column(
+                              children: <Widget>[
+                                Container(
+                                  height: widget.timeHeight,
+                                  child: ListView.builder(
+                                      key: Key('timelineeditor-times'),
+                                      controller: scrollController,
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: totalTimeSlots,
+                                      itemBuilder: (context, index) {
+                                        return buildTextTime(
+                                            index,
+                                            scaledPixelPerSeconds,
+                                            index <= totalFullTimeSlots - 1
+                                                ? timeBlockSize
+                                                : lastTimeBlockSize,
+                                            context);
+                                      }),
+                                ),
+                                ...List.generate(
+                                    widget.countTracks,
+                                    (index) => widget.trackBuilder(
                                         index,
                                         scaledPixelPerSeconds,
-                                        index <= totalFullTimeSlots - 1
-                                            ? timeBlockSize
-                                            : lastTimeBlockSize,
-                                        context);
-                                  }),
+                                        widget.duration,
+                                        _controllers)),
+                              ],
                             ),
-                            ...List.generate(
-                                widget.countTracks,
-                                (index) => widget.trackBuilder(
-                                    index,
-                                    scaledPixelPerSeconds,
-                                    widget.duration,
-                                    _controllers)),
+                            StreamBuilder<double>(
+                                stream: widget.positionStream,
+                                builder: (context, snapshot) {
+                                  return snapshot.hasData
+                                      ? Positioned(
+                                          left: (snapshot.data *
+                                                  scaledPixelPerSeconds) -
+                                              scrollController.position.pixels,
+                                          top: 0,
+                                          bottom: 0,
+                                          child: Container(
+                                            color: Colors.red,
+                                            width: 5,
+                                          ))
+                                      : null;
+                                })
                           ],
                         ),
                       ),
