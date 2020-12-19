@@ -12,15 +12,25 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   Duration totalDuration = Duration(seconds: 600);
+
   Duration box1Start = Duration(seconds: 30);
   Duration box1Duration = Duration(seconds: 50);
   bool box1Selected = false;
   Duration box2Start = Duration(seconds: 100);
   Duration box2Duration = Duration(seconds: 180);
   bool box2Selected = false;
+
+  Duration box1bStart = Duration(seconds: 30);
+  Duration box1bDuration = Duration(seconds: 50);
+  bool box1bSelected = false;
+  Duration box2bStart = Duration(seconds: 100);
+  Duration box2bDuration = Duration(seconds: 180);
+  bool box2bSelected = false;
+
   bool deleted = false;
   double position = 0;
   bool customTimeString = false;
+  bool withHeaders = false;
   StreamController<double> positionController;
   Timer progressTimer;
   TimelineEditorScaleController scaleController;
@@ -59,6 +69,37 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   void moveBox2End(Duration move) {
     if (box2Start + box2Duration + move < totalDuration)
       setState(() => box2Duration = box2Duration + move);
+  }
+
+  // 2nd track
+
+  void moveBox1b(Duration newStart) {
+    if (box1bStart + newStart < Duration.zero) {
+      newStart = Duration.zero;
+    }
+    if (box1bStart + newStart + box1bDuration < box2bStart)
+      setState(() {
+        box1bStart += newStart;
+      });
+  }
+
+  void moveBox1bEnd(Duration move) {
+    if (box1bStart + box1bDuration + move < box2bStart)
+      setState(() => box1bDuration = box1bDuration + move);
+  }
+
+  void moveBox2b(Duration startMove) {
+    var newStart = box2bStart + startMove;
+    if (box1Start + box1bDuration < newStart &&
+        newStart + box2bDuration < totalDuration)
+      setState(() {
+        box2bStart = newStart;
+      });
+  }
+
+  void moveBox2bEnd(Duration move) {
+    if (box2bStart + box2bDuration + move < totalDuration)
+      setState(() => box2bDuration = box2bDuration + move);
   }
 
   void positionUpdate(Timer timer) {
@@ -129,6 +170,10 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                     value: customTimeString,
                     onChanged: (value) =>
                         setState(() => customTimeString = value)),
+                SwitchListTile(
+                    title: Text('Headers'),
+                    value: withHeaders,
+                    onChanged: (value) => setState(() => withHeaders = value)),
               ],
             ))),
             Padding(
@@ -136,8 +181,13 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                 child: TimelineEditor(
                   scaleController: scaleController,
                   minimumTimeWidgetExtent: customTimeString ? 100 : null,
-                  leadingWidgetBuilder: (index) => Center(child: RaisedButton(onPressed: (){},   child: Text("$index"))),
-                  timelineLeadingWidget: Center(child: Text("HEADDER")),
+                  leadingWidgetBuilder: withHeaders
+                      ? (index) => Center(
+                          child: RaisedButton(
+                              onPressed: () {}, child: Text("$index")))
+                      : null,
+                  timelineLeadingWidget:
+                      withHeaders ? Center(child: Text("HEADER")) : null,
                   timeWidgetBuilder: customTimeString
                       ? (d, t) => Padding(
                             padding: const EdgeInsets.only(left: 8.0),
@@ -150,42 +200,77 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                   onPositionTap: (s) => position = s,
                   positionStream: positionController.stream,
                   countTracks: 2,
-                  
                   trackBuilder: (track, pps, duration, scrollControllers) =>
-                      TimelineEditorTrack(
-                    // key: Key('separated'),
-                    scrollControllers: scrollControllers,
-                    defaultColor: Colors.green[700],
-                    boxes: [
-                      TimelineEditorCard(
-                        box1Start,
-                        duration: box1Duration,
-                        selected: box1Selected,
-                        onTap: () =>
-                            setState(() => box1Selected = !box1Selected),
-                        color: Colors.blue,
-                        onMovedDuration: moveBox1End,
-                        onMovedStart: moveBox1,
-                      ),
-                      TimelineEditorCard(box2Start,
-                          duration: box2Duration,
-                          menuEntries: [
-                            PopupMenuItem<String>(
-                                child: Text('Demo!'), value: 'demo')
-                          ],
-                          onSelectedMenuItem: (v) {
-                            print(v);
-                          },
-                          onMovedDuration: moveBox2End,
-                          onMovedStart: moveBox2,
-                          selected: box2Selected,
-                          onTap: () =>
-                              setState(() => box2Selected = !box2Selected),
-                          color: Colors.green),
-                    ],
-                    pixelsPerSeconds: pps,
-                    duration: duration,
-                  ),
+                      track == 0
+                          ? TimelineEditorTrack(
+                              // key: Key('separated'),
+                              scrollControllers: scrollControllers,
+                              defaultColor: Colors.green[700],
+                              boxes: [
+                                TimelineEditorCard(
+                                  box1Start,
+                                  duration: box1Duration,
+                                  selected: box1Selected,
+                                  onTap: () => setState(
+                                      () => box1Selected = !box1Selected),
+                                  color: Colors.blue,
+                                  onMovedDuration: moveBox1End,
+                                  onMovedStart: moveBox1,
+                                ),
+                                TimelineEditorCard(box2Start,
+                                    duration: box2Duration,
+                                    menuEntries: [
+                                      PopupMenuItem<String>(
+                                          child: Text('Demo!'), value: 'demo')
+                                    ],
+                                    onSelectedMenuItem: (v) {
+                                      print(v);
+                                    },
+                                    onMovedDuration: moveBox2End,
+                                    onMovedStart: moveBox2,
+                                    selected: box2Selected,
+                                    onTap: () => setState(
+                                        () => box2Selected = !box2Selected),
+                                    color: Colors.green),
+                              ],
+                              pixelsPerSeconds: pps,
+                              duration: duration,
+                            )
+                          : TimelineEditorTrack(
+                              // key: Key('separated'),
+                              scrollControllers: scrollControllers,
+                              defaultColor: Colors.green[700],
+                              boxes: [
+                                TimelineEditorCard(
+                                  box1Start,
+                                  duration: box1bDuration,
+                                  selected: box1bSelected,
+                                  onTap: () => setState(
+                                      () => box1bSelected = !box1bSelected),
+                                  color: Colors.red,
+                                  onMovedDuration: moveBox1bEnd,
+                                  onMovedStart: moveBox1b,
+                                ),
+                                TimelineEditorCard(box2bStart,
+                                    duration: box2bDuration,
+                                    borderColor: Colors.yellow,
+                                    menuEntries: [
+                                      PopupMenuItem<String>(
+                                          child: Text('Demo 2!'), value: 'demo')
+                                    ],
+                                    onSelectedMenuItem: (v) {
+                                      print(v);
+                                    },
+                                    onMovedDuration: moveBox2bEnd,
+                                    onMovedStart: moveBox2b,
+                                    selected: box2bSelected,
+                                    onTap: () => setState(
+                                        () => box2bSelected = !box2bSelected),
+                                    color: Colors.deepOrange),
+                              ],
+                              pixelsPerSeconds: pps,
+                              duration: duration,
+                            ),
                   duration: totalDuration,
                 )),
           ],

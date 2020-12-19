@@ -122,7 +122,6 @@ class _TimelineEditorState extends State<TimelineEditor> {
   }
 
   ScrollController scrollController;
-  ScrollController scrollController2;
   LinkedScrollControllerGroup _controllers;
 
   double previousMaxWidth;
@@ -216,7 +215,6 @@ class _TimelineEditorState extends State<TimelineEditor> {
     super.initState();
     _controllers = LinkedScrollControllerGroup();
     scrollController = _controllers.addAndGet();
-    scrollController2 = _controllers.addAndGet();
     scaleController.scaleUpdates.listen((s) {
       if (scale != s) {
         setState(() => scale = s);
@@ -332,23 +330,6 @@ class _TimelineEditorState extends State<TimelineEditor> {
                                         context);
                                   }),
                             ),
-                            Container(
-                              height: widget.timeHeight,
-                              child: ListView.builder(
-                                  key: Key('timelineeditor-times2'),
-                                  controller: scrollController2,
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: totalTimeSlots,
-                                  itemBuilder: (context, index) {
-                                    return buildTextTime(
-                                        index,
-                                        scaledPixelPerSeconds,
-                                        index <= totalFullTimeSlots - 1
-                                            ? timeBlockSize
-                                            : lastTimeBlockSize,
-                                        context);
-                                  }),
-                            ),
                             ...List.generate(
                                 widget.countTracks,
                                 (index) => widget.trackBuilder(
@@ -374,8 +355,8 @@ class _TimelineEditorState extends State<TimelineEditor> {
         durationFromSeconds(i * finalBlocksEvery / scaledPixelsPerSeconds);
     if (widget.timeWidgetBuilder != null)
       return SizedBox(
-      width: finalBlocksEvery,
-              child: widget.timeWidgetBuilder(
+        width: finalBlocksEvery,
+        child: widget.timeWidgetBuilder(
           pos,
           widget.duration,
         ),
