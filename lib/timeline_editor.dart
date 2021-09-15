@@ -289,6 +289,13 @@ class _TimelineEditorState extends State<TimelineEditor> {
 
                 return Stack(
                   children: [
+                    ...List.generate(
+                        widget.countTracks,
+                            (index) => widget.trackBuilder(
+                            index,
+                            scaledPixelPerSeconds,
+                            widget.duration,
+                            _controllers)),
                     Container(
                       margin: EdgeInsets.only(top: 40),
                       height: 35,
@@ -307,13 +314,7 @@ class _TimelineEditorState extends State<TimelineEditor> {
                                 context);
                           }),
                     ),
-                    ...List.generate(
-                        widget.countTracks,
-                            (index) => widget.trackBuilder(
-                            index,
-                            scaledPixelPerSeconds,
-                            widget.duration,
-                            _controllers)),
+
                     StreamBuilder<double>(
                         stream: widget.positionStream,
                         builder: (context, snapshot) {

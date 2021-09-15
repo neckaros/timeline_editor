@@ -77,7 +77,7 @@ class TimelineEditorCard extends ITimelineEditorCard {
         onTap: onTap,
         child: Container(
           margin: EdgeInsets.all(1.0),
-          color: color.withOpacity(0.5),
+          color: color,
           child: Stack(children: [
             child != null ? Positioned.fill(child: child) : Container(),
             if (selected)
