@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:timeline_editor/timeline_editor.dart';
+import 'package:timeline_editor/play_back_bean.dart';
 
 void main() => runApp(RecordingsPage());
 
@@ -87,37 +88,41 @@ class _RecordingsPageState
   Widget build(BuildContext context) {
 
     return MaterialApp(
-      builder:(_, __)=> Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            height: 80,
-                          color: Colors.grey,
-                          child: TimelineEditor(
-                            blocksEvery: Duration(seconds: 10),
-                            separatorColor: Colors.white,
-                            timelineTextStyle: TextStyle(fontSize: 15,color: Colors.white),
-                            onPositionTap: (s) => position = s,
-                            positionStream: positionController.stream,
-                            countTracks: 1,
-                            trackBuilder: (track, pps, duration, scrollControllers) =>  TimelineEditorTrack(
-                              trackHeight: 80,
-                              defaultColor: Colors.green[700],
-                              boxes: [
-                                TimelineEditorCard(box1Start,duration: Duration(seconds: 100),
-                                  onMovedDuration: updateBox1,
-                                  color: Colors.blue,)
-                              ],
-                              pixelsPerSeconds: pps,
-                              duration: duration,
-                              scrollControllers: scrollControllers,
-                            )
-                            ,
-                            duration: Duration(seconds: 300),
-                          ),
+      builder:(_, __)=> Material(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              height: 80,
+                            color: Colors.grey,
+                            child: TimelineEditor(
+                              blocksEvery: Duration(seconds: 10),
+                              separatorColor: Colors.white,
+                              timelineTextStyle: TextStyle(fontSize: 15,color: Colors.white),
+                              onPositionTap: (s) => position = s,
+                              positionStream: positionController.stream,
+                              countTracks: 1,
+                              trackBuilder: (track, pps, duration, scrollControllers) =>  TimelineEditorTrack(
+                                trackHeight: 80,
+                                defaultColor: Colors.green[700],
+                                boxes: [
+                                  PlayBackBean(
+                                    formatedStarTime: "00:01:00",
+                                    formatedEndTime: "00:03:00"
+                                  ),
 
-          ),
-        ],
+                                ],
+                                pixelsPerSeconds: pps,
+                                duration: duration,
+                                scrollControllers: scrollControllers,
+                              )
+                              ,
+                              duration: Duration(seconds: 300),
+                            ),
+
+            ),
+          ],
+        ),
       ),
     );
   }

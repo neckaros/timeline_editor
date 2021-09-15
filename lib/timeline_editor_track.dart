@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:linked_scroll_controller/linked_scroll_controller.dart';
 import 'package:timeline_editor/extensions.dart';
+import 'package:timeline_editor/play_back_bean.dart';
 
 /// a box to be displayed in a [TimelineEditorTrack] with a [start] and a [duration]
 class TimelineEditorCard extends ITimelineEditorCard {
@@ -221,7 +222,7 @@ class TimelineEditorSizedBox extends StatelessWidget {
 
 /// A track that can be used with the [timeline_editor] builder
 class TimelineEditorTrack extends StatefulWidget {
-  final List<ITimelineEditorCard> boxes;
+  final List<PlayBackBean> boxes;
   final double pixelsPerSeconds;
   final LinkedScrollControllerGroup scrollControllers;
 
@@ -248,6 +249,7 @@ class TimelineEditorTrack extends StatefulWidget {
 
 class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
   List<ITimelineEditorCard> boxes;
+  List<PlayBackBean> backupPlayBackBean;
   ScrollController _controller;
 
   @override
@@ -265,7 +267,7 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
 
   @override
   void didUpdateWidget(TimelineEditorTrack oldWidget) {
-    if (boxes != widget.boxes) {
+    if (backupPlayBackBean != widget.boxes) {
       setup();
     }
     super.didUpdateWidget(oldWidget);
@@ -276,28 +278,29 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
 
     if (widget.boxes != null && widget.boxes.length > 0) {
       var sortedStart = widget.boxes.toList();
-      sortedStart.sort((a, b) => a.start.compareTo(b.start));
+      sortedStart.sort((a, b) => PlayBackBean.parseDuration( a.formatedStarTime).compareTo(PlayBackBean.parseDuration( b.formatedStarTime)));
       var blankFirstBox = TimelineEditorEmptyCard(
         Duration.zero,
-        sortedStart[0].start,
+          PlayBackBean.parseDuration( sortedStart[0].formatedStarTime)
       );
       targetBoxes.add(blankFirstBox);
       var i = 0;
       for (var box in sortedStart) {
-        i++;
         var nextBoxTime =
-            i < sortedStart.length ? sortedStart[i].start : widget.duration;
-        targetBoxes.add(box);
-        var end = box.start + box.duration;
+            i < sortedStart.length ? PlayBackBean.parseDuration( sortedStart[i].formatedStarTime) : widget.duration;
+        targetBoxes.add(TimelineEditorCard(
+            PlayBackBean.parseDuration( sortedStart[i].formatedStarTime),
+            duration: PlayBackBean.parseDuration( sortedStart[i].formatedEndTime),color: Colors.red
+        ));
+        var end =  PlayBackBean.parseDuration( box.formatedStarTime) + PlayBackBean.parseDuration( box.formatedEndTime);
         targetBoxes.add(
-          TimelineEditorEmptyCard(
-            end,
-            nextBoxTime - end,
-          ),
+            TimelineEditorEmptyCard( end,
+            nextBoxTime- end   ,
+             )
         );
       }
     }
-
+    backupPlayBackBean = widget.boxes;
     boxes = targetBoxes;
   }
 
