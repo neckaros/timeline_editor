@@ -1,105 +1,55 @@
 import 'dart:async';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:timeline_editor/timeline_editor.dart';
 
-void main() => runApp(MyApp());
+void main() => runApp(RecordingsPage());
 
-class MyApp extends StatefulWidget {
+class RecordingsPage extends StatefulWidget {
+  final String title;
+
+  const RecordingsPage({Key key, this.title = "Recordings"}) : super(key: key);
+
   @override
-  _MyAppState createState() => _MyAppState();
+  _RecordingsPageState createState() => _RecordingsPageState();
 }
 
-class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
-  Duration totalDuration = Duration(seconds: 600);
+class _RecordingsPageState
+    extends State<RecordingsPage> with SingleTickerProviderStateMixin {
+  //use 'controller' variable to access controller
 
-  Duration box1Start = Duration(seconds: 30);
-  Duration box1Duration = Duration(seconds: 50);
-  bool box1Selected = false;
-  Duration box2Start = Duration(seconds: 100);
-  Duration box2Duration = Duration(seconds: 180);
-  bool box2Selected = false;
 
-  Duration box1bStart = Duration(seconds: 30);
-  Duration box1bDuration = Duration(seconds: 50);
-  bool box1bSelected = false;
-  Duration box2bStart = Duration(seconds: 100);
-  Duration box2bDuration = Duration(seconds: 180);
-  bool box2bSelected = false;
-
+  Duration box1Start = Duration.zero;
+  Duration box2Start = Duration(seconds: 120);
   bool deleted = false;
   double position = 0;
   bool customTimeString = false;
-  bool withHeaders = false;
   StreamController<double> positionController;
   Timer progressTimer;
   TimelineEditorScaleController scaleController;
 
-  double scale;
-
-  double _trackHeight = 100;
+  double _trackHeight = 20;
 
   AnimationController _controller;
   Animation<double> _animation;
 
-  void moveBox1(Duration newStart) {
-    if (box1Start + newStart < Duration.zero) {
-      newStart = Duration.zero;
+  void updateBox1(Duration duration) {
+    if (box1Start + duration < Duration.zero) {
+      duration = -box1Start;
     }
-    if (box1Start + newStart + box1Duration < box2Start)
-      setState(() {
-        box1Start += newStart;
-      });
+    setState(() {
+      box1Start += duration;
+    });
   }
 
-  void moveBox1End(Duration move) {
-    if (box1Start + box1Duration + move < box2Start)
-      setState(() => box1Duration = box1Duration + move);
-  }
-
-  void moveBox2(Duration startMove) {
-    var newStart = box2Start + startMove;
-    if (box1Start + box1Duration < newStart &&
-        newStart + box2Duration < totalDuration)
-      setState(() {
-        box2Start = newStart;
-      });
-  }
-
-  void moveBox2End(Duration move) {
-    if (box2Start + box2Duration + move < totalDuration)
-      setState(() => box2Duration = box2Duration + move);
-  }
-
-  // 2nd track
-
-  void moveBox1b(Duration newStart) {
-    if (box1bStart + newStart < Duration.zero) {
-      newStart = Duration.zero;
+  void updateBox2(Duration duration) {
+    if (box2Start + duration < Duration.zero) {
+      duration = -box2Start;
     }
-    if (box1bStart + newStart + box1bDuration < box2bStart)
-      setState(() {
-        box1bStart += newStart;
-      });
-  }
-
-  void moveBox1bEnd(Duration move) {
-    if (box1bStart + box1bDuration + move < box2bStart)
-      setState(() => box1bDuration = box1bDuration + move);
-  }
-
-  void moveBox2b(Duration startMove) {
-    var newStart = box2bStart + startMove;
-    if (box1Start + box1bDuration < newStart &&
-        newStart + box2bDuration < totalDuration)
-      setState(() {
-        box2bStart = newStart;
-      });
-  }
-
-  void moveBox2bEnd(Duration move) {
-    if (box2bStart + box2bDuration + move < totalDuration)
-      setState(() => box2bDuration = box2bDuration + move);
+    setState(() {
+      box2Start += duration;
+    });
   }
 
   void positionUpdate(Timer timer) {
@@ -113,7 +63,6 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    scaleController = TimelineEditorScaleController();
     positionController = StreamController<double>.broadcast();
     progressTimer = Timer.periodic(Duration(milliseconds: 350), positionUpdate);
     _controller =
@@ -127,7 +76,6 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
 
   @override
   void dispose() {
-    scaleController.dispose();
     progressTimer?.cancel();
     positionController?.close();
 
@@ -137,97 +85,41 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+
     return MaterialApp(
-      darkTheme: ThemeData.dark(),
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Timeline_editor example app'),
-        ),
-        body: Column(
-          children: <Widget>[
-            Expanded(
-                child: Center(
-                    child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                const Text('Timeline_editor example app'),
-                StreamBuilder<double>(
-                    stream: scaleController.scaleUpdates,
-                    initialData: 1,
-                    builder: (context, snapshot) {
-                      return Text('Current scale: ' + snapshot.data.toString());
-                    }),
-                RaisedButton(
-                  child: const Text('Change track height'),
-                  onPressed: () =>
-                      _controller.status == AnimationStatus.forward ||
-                              _controller.status == AnimationStatus.completed
-                          ? _controller.reverse()
-                          : _controller.forward(),
-                ),
-                SwitchListTile(
-                    title: Text('Custom time string'),
-                    value: customTimeString,
-                    onChanged: (value) =>
-                        setState(() => customTimeString = value)),
-                SwitchListTile(
-                    title: Text('Headers'),
-                    value: withHeaders,
-                    onChanged: (value) => setState(() => withHeaders = value)),
-              ],
-            ))),
-            Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: TimelineEditor(
-                  timeHeight: 20,
-                  scaleController: scaleController,
-                  minimumTimeWidgetExtent: customTimeString ? 100 : null,
-                  leadingWidgetBuilder: withHeaders
-                      ? (index) => Center(
-                          child: RaisedButton(
-                              onPressed: () {}, child: Text("$index")))
-                      : null,
-                  timelineLeadingWidget:
-                      withHeaders ? Center(child: Text("HEADER")) : null,
-                  timeWidgetBuilder: customTimeString
-                      ? (d, t) => Padding(
-                            padding: const EdgeInsets.only(left: 8.0),
-                            child: Text(
-                              '${d.inSeconds}/${t.inSeconds}',
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          )
-                      : null,
-                  onPositionTap: (s) => position = s,
-                  positionStream: positionController.stream,
-                  countTracks: 1,
-                  trackBuilder: (track, pps, duration, scrollControllers) =>
-                       TimelineEditorTrack(
-                              // key: Key('separated'),
-                              scrollControllers: scrollControllers,
+      builder:(_, __)=> Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            height: 80,
+                          color: Colors.grey,
+                          child: TimelineEditor(
+                            blocksEvery: Duration(seconds: 10),
+                            separatorColor: Colors.white,
+                            timelineTextStyle: TextStyle(fontSize: 15,color: Colors.white),
+                            onPositionTap: (s) => position = s,
+                            positionStream: positionController.stream,
+                            countTracks: 1,
+                            trackBuilder: (track, pps, duration, scrollControllers) =>  TimelineEditorTrack(
+                              trackHeight: 80,
                               defaultColor: Colors.green[700],
                               boxes: [
-                                TimelineEditorCard(
-                                  box1Start,
-                                  duration: box1Duration,
-                                  selected: box1Selected,
-                                  onTap: () => setState(
-                                      () => box1Selected = !box1Selected),
-                                  color: Colors.blue,
-                                  onMovedDuration: moveBox1End,
-                                  onMovedStart: moveBox1,
-                                ),
-
+                                TimelineEditorCard(box1Start,duration: Duration(seconds: 100),
+                                  onMovedDuration: updateBox1,
+                                  color: Colors.blue,)
                               ],
                               pixelsPerSeconds: pps,
                               duration: duration,
+                              scrollControllers: scrollControllers,
                             )
-                          ,
-                  duration: totalDuration,
-                )),
-          ],
-        ),
+                            ,
+                            duration: Duration(seconds: 300),
+                          ),
+
+          ),
+        ],
       ),
     );
   }
+
 }
