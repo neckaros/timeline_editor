@@ -75,10 +75,9 @@ class TimelineEditorCard extends ITimelineEditorCard {
       pixelsPerSeconds: pixelsPerSeconds,
       child: GestureDetector(
         onTap: onTap,
-        child: Card(
+        child: Container(
           margin: EdgeInsets.all(1.0),
-          color: color,
-          elevation: 2,
+          color: color.withOpacity(0.5),
           child: Stack(children: [
             child != null ? Positioned.fill(child: child) : Container(),
             if (selected)

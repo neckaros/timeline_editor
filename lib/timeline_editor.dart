@@ -89,7 +89,7 @@ class TimelineEditor extends StatefulWidget {
     this.scaleController,
     this.timeWidgetEvery,
     this.timeHeight = 30,
-    this.minimumTimeWidgetExtent = 70,
+    this.minimumTimeWidgetExtent = 80,
     this.separatorColor,
     this.positionStream,
     this.blocksEvery = const Duration(seconds: 5),
@@ -287,81 +287,50 @@ class _TimelineEditorState extends State<TimelineEditor> {
                             totalFullTimeSlots) *
                         timeBlockSize;
 
-                return Container(
-                  child: Row(
-                    children: [
-                      Column(
-                        // mainAxisSize: MainAxisSize.max,
-                        // mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          SizedBox(
-                            height: widget.timeHeight * 2,
-                            child: widget.timelineLeadingWidget,
-                          ),
-                          ...List<Widget>.generate(
-                              widget.countTracks,
-                              (i) => SizedBox(
-                                  height: widget
-                                      .trackBuilder(i, scaledPixelPerSeconds,
-                                          widget.duration, _controllers)
-                                      .trackHeight,
-                                  child: widget.leadingWidgetBuilder != null
-                                      ? widget.leadingWidgetBuilder(i)
-                                      : SizedBox.shrink())),
-                        ],
-                      ),
-                      Flexible(
-                        child: Stack(
-                          children: [
-                            Column(
-                              children: <Widget>[
-                                Container(
-                                  height: widget.timeHeight,
-                                  child: ListView.builder(
-                                      key: Key('timelineeditor-times'),
-                                      controller: scrollController,
-                                      scrollDirection: Axis.horizontal,
-                                      itemCount: totalTimeSlots,
-                                      itemBuilder: (context, index) {
-                                        return buildTextTime(
-                                            index,
-                                            scaledPixelPerSeconds,
-                                            index <= totalFullTimeSlots - 1
-                                                ? timeBlockSize
-                                                : lastTimeBlockSize,
-                                            context);
-                                      }),
-                                ),
-                                ...List.generate(
-                                    widget.countTracks,
-                                    (index) => widget.trackBuilder(
-                                        index,
-                                        scaledPixelPerSeconds,
-                                        widget.duration,
-                                        _controllers)),
-                              ],
-                            ),
-                            StreamBuilder<double>(
-                                stream: widget.positionStream,
-                                builder: (context, snapshot) {
-                                  return snapshot.hasData
-                                      ? Positioned(
-                                          left: (snapshot.data *
-                                                  scaledPixelPerSeconds) -
-                                              scrollController.position.pixels,
-                                          top: 0,
-                                          bottom: 0,
-                                          child: Container(
-                                            color: Colors.red,
-                                            width: 5,
-                                          ))
-                                      : null;
-                                })
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                return Stack(
+                  children: [
+                    Container(
+                      margin: EdgeInsets.only(top: 40),
+                      height: 35,
+                      child: ListView.builder(
+                          key: Key('timelineeditor-times'),
+                          controller: scrollController,
+                          scrollDirection: Axis.horizontal,
+                          itemCount: totalTimeSlots,
+                          itemBuilder: (context, index) {
+                            return buildTextTime(
+                                index,
+                                scaledPixelPerSeconds,
+                                index <= totalFullTimeSlots - 1
+                                    ? timeBlockSize
+                                    : lastTimeBlockSize,
+                                context);
+                          }),
+                    ),
+                    ...List.generate(
+                        widget.countTracks,
+                            (index) => widget.trackBuilder(
+                            index,
+                            scaledPixelPerSeconds,
+                            widget.duration,
+                            _controllers)),
+                    StreamBuilder<double>(
+                        stream: widget.positionStream,
+                        builder: (context, snapshot) {
+                          return snapshot.hasData
+                              ? Positioned(
+                                  left: (snapshot.data *
+                                          scaledPixelPerSeconds) -
+                                      scrollController.position.pixels,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: Container(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ))
+                              : null;
+                        })
+                  ],
                 );
               }),
         ),
@@ -384,26 +353,58 @@ class _TimelineEditorState extends State<TimelineEditor> {
     return SizedBox(
       width: finalBlocksEvery,
       child: Row(
-        children: <Widget>[
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Container(
-            color: Colors.black,
-            width: 2,
+            margin: EdgeInsets.only(top: 2,),
+            color: Colors.white,
+            width: 1,
+            height: 5,
           ),
-          Flexible(
-            fit: FlexFit.loose,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 4.0),
-              child: Text(
-                secondsToString(
-                  pos,
-                  widget.duration,
-                ),
-                style: widget.timelineTextStyle ??
-                    Theme.of(context).textTheme.bodyText1,
-                overflow: TextOverflow.ellipsis,
+          Column(
+            children: <Widget>[
+              Container(
+                color: Colors.white,
+                width: 2,
+                height: 10,
               ),
-            ),
+              SizedBox(height: 5,),
+              Flexible(
+                fit: FlexFit.loose,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 4.0),
+                  child: Text(
+                    secondsToString(
+                      pos,
+                      widget.duration,
+                    ),
+                    style: widget.timelineTextStyle ??
+                        Theme.of(context).textTheme.bodyText1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ],
           ),
+          Container(
+            margin: EdgeInsets.only(top: 2, right: 12),
+            color: Colors.white,
+            width: 1,
+            height: 5,
+          ),
+          Container(
+            margin: EdgeInsets.only(top: 2, right: 12),
+            color: Colors.white,
+            width: 1,
+            height: 5,
+          ),
+          Container(
+            margin: EdgeInsets.only(top: 2, right: 12),
+            color: Colors.white,
+            width: 1,
+            height: 5,
+          ),
+
         ],
       ),
     );

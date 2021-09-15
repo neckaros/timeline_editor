@@ -179,6 +179,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
             Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: TimelineEditor(
+                  timeHeight: 20,
                   scaleController: scaleController,
                   minimumTimeWidgetExtent: customTimeString ? 100 : null,
                   leadingWidgetBuilder: withHeaders
@@ -199,10 +200,9 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                       : null,
                   onPositionTap: (s) => position = s,
                   positionStream: positionController.stream,
-                  countTracks: 2,
+                  countTracks: 1,
                   trackBuilder: (track, pps, duration, scrollControllers) =>
-                      track == 0
-                          ? TimelineEditorTrack(
+                       TimelineEditorTrack(
                               // key: Key('separated'),
                               scrollControllers: scrollControllers,
                               defaultColor: Colors.green[700],
@@ -217,60 +217,12 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                                   onMovedDuration: moveBox1End,
                                   onMovedStart: moveBox1,
                                 ),
-                                TimelineEditorCard(box2Start,
-                                    duration: box2Duration,
-                                    menuEntries: [
-                                      PopupMenuItem<String>(
-                                          child: Text('Demo!'), value: 'demo')
-                                    ],
-                                    onSelectedMenuItem: (v) {
-                                      print(v);
-                                    },
-                                    onMovedDuration: moveBox2End,
-                                    onMovedStart: moveBox2,
-                                    selected: box2Selected,
-                                    onTap: () => setState(
-                                        () => box2Selected = !box2Selected),
-                                    color: Colors.green),
+
                               ],
                               pixelsPerSeconds: pps,
                               duration: duration,
                             )
-                          : TimelineEditorTrack(
-                              // key: Key('separated'),
-                              scrollControllers: scrollControllers,
-                              defaultColor: Colors.green[700],
-                              boxes: [
-                                TimelineEditorCard(
-                                  box1Start,
-                                  duration: box1bDuration,
-                                  selected: box1bSelected,
-                                  onTap: () => setState(
-                                      () => box1bSelected = !box1bSelected),
-                                  color: Colors.red,
-                                  onMovedDuration: moveBox1bEnd,
-                                  onMovedStart: moveBox1b,
-                                ),
-                                TimelineEditorCard(box2bStart,
-                                    duration: box2bDuration,
-                                    borderColor: Colors.yellow,
-                                    menuEntries: [
-                                      PopupMenuItem<String>(
-                                          child: Text('Demo 2!'), value: 'demo')
-                                    ],
-                                    onSelectedMenuItem: (v) {
-                                      print(v);
-                                    },
-                                    onMovedDuration: moveBox2bEnd,
-                                    onMovedStart: moveBox2b,
-                                    selected: box2bSelected,
-                                    onTap: () => setState(
-                                        () => box2bSelected = !box2bSelected),
-                                    color: Colors.deepOrange),
-                              ],
-                              pixelsPerSeconds: pps,
-                              duration: duration,
-                            ),
+                          ,
                   duration: totalDuration,
                 )),
           ],
