@@ -96,7 +96,8 @@ class _RecordingsPageState
               height: 80,
                             color: Colors.grey,
                             child: TimelineEditor(
-                              blocksEvery: Duration(seconds: 10),
+                              timeWidgetEvery:  Duration(seconds: 10),
+
                               separatorColor: Colors.white,
                               timelineTextStyle: TextStyle(fontSize: 15,color: Colors.white),
                               onPositionTap: (s) => position = s,
@@ -107,10 +108,25 @@ class _RecordingsPageState
                                 defaultColor: Colors.green[700],
                                 boxes: [
                                   PlayBackBean(
-                                    formatedStarTime: "00:01:00",
-                                    formatedEndTime: "00:03:00"
+                                    formatedStarTime: "00:00:10",
+                                    formatedEndTime: "00:02:00"
                                   ),
-
+                                  PlayBackBean(
+                                      formatedStarTime: "00:03:00",
+                                      formatedEndTime: "00:05:00"
+                                  ),
+                                  PlayBackBean(
+                                      formatedStarTime: "00:07:00",
+                                      formatedEndTime: "00:10:00"
+                                  ),
+                                  PlayBackBean(
+                                      formatedStarTime: "00:12:00",
+                                      formatedEndTime: "00:14:00"
+                                  ),
+                                  PlayBackBean(
+                                      formatedStarTime: "00:15:00",
+                                      formatedEndTime: "00:25:00"
+                                  ),
                                 ],
                                 pixelsPerSeconds: pps,
                                 duration: duration,

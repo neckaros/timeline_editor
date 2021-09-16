@@ -284,15 +284,14 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
           PlayBackBean.parseDuration( sortedStart[0].formatedStarTime)
       );
       targetBoxes.add(blankFirstBox);
-      var i = 0;
-      for (var box in sortedStart) {
+      for (int i = 0; i <  sortedStart.length; i++) {
         var nextBoxTime =
             i < sortedStart.length ? PlayBackBean.parseDuration( sortedStart[i].formatedStarTime) : widget.duration;
         targetBoxes.add(TimelineEditorCard(
             PlayBackBean.parseDuration( sortedStart[i].formatedStarTime),
             duration: PlayBackBean.parseDuration( sortedStart[i].formatedEndTime),color: Colors.red
         ));
-        var end =  PlayBackBean.parseDuration( box.formatedStarTime) + PlayBackBean.parseDuration( box.formatedEndTime);
+        var end =  PlayBackBean.parseDuration( sortedStart[i].formatedStarTime) + PlayBackBean.parseDuration( sortedStart[i].formatedEndTime);
         targetBoxes.add(
             TimelineEditorEmptyCard( end,
             nextBoxTime- end   ,
