@@ -19,7 +19,7 @@ typedef TimelineEditorTrackBuilder = TimelineEditorTrack Function(
     int trackNumber,
     double pixelsPerSeconds,
     Duration duration,
-    LinkedScrollControllerGroup scrollControllers);
+    LinkedScrollControllerGroup? scrollControllers);
 
 /// Main timeline widget which contains the tracks
 class TimelineEditor extends StatefulWidget {
@@ -30,10 +30,10 @@ class TimelineEditor extends StatefulWidget {
   final Duration duration;
 
   /// Timeline time text theme. By default we use Theme.of(context).textTheme.bodyText1
-  final TextStyle timelineTextStyle;
+  final TextStyle? timelineTextStyle;
 
   /// Opational: Convert duration to string for the timeline headers
-  final Widget Function(Duration duration, Duration totalDuration)
+  final Widget Function(Duration duration, Duration totalDuration)?
       timeWidgetBuilder;
 
   /// Optional hright of the time bar displayed on top of the timeline.
@@ -43,24 +43,24 @@ class TimelineEditor extends StatefulWidget {
   /// Optional minimum size of the time display in the timeline.
   /// Can be used if you have custom string that takes more/less than the default 70pixels
   /// ignored if blocksEvery is set
-  final double minimumTimeWidgetExtent;
+  final double? minimumTimeWidgetExtent;
 
   /// Optional argument to force the spacing between each time widget
   /// by default we will optimize as best fitted by the [minimumTimeWidgetExtent] while keeping round number:
   /// one every seconds, 5 seconds, ten seconds, minutes, days, weeks, month years
-  final Duration timeWidgetEvery;
+  final Duration? timeWidgetEvery;
 
   /// Color used by the time separator in the timeline.
   /// By default we use Theme.of(context).brightness == Brightness.dark ? Colors.white60 : Colors.black87
-  final Color separatorColor;
+  final Color? separatorColor;
 
   /// optional distance in seconds between each time indicator
   final Duration blocksEvery;
 
   /// a Widget that can be displayed as headding for leading widgets.
-  final Widget timelineLeadingWidget;
+  final Widget? timelineLeadingWidget;
 
-  final Widget Function(int index) leadingWidgetBuilder;
+  final Widget Function(int index)? leadingWidgetBuilder;
 
   /// the builder for each track
   /// tou can use a [TimelineEditorTrack] or your custom track
@@ -68,22 +68,22 @@ class TimelineEditor extends StatefulWidget {
 
   /// optional position stream in the timeline for the position indicator
   /// we use stream to avoid rebuilding the whole widget for each position change
-  final Stream<double> positionStream;
+  final Stream<double>? positionStream;
 
   /// user whant to switch to a time position in seconds
-  final void Function(double position) onPositionTap;
+  final void Function(double position)? onPositionTap;
 
   /// scale controller use to
   /// manually set scale
   /// get updates of scale
   /// set min & max scale
-  final TimelineEditorScaleController scaleController;
+  final TimelineEditorScaleController? scaleController;
 
   const TimelineEditor({
-    Key key,
-    @required this.duration,
-    @required this.trackBuilder,
-    @required this.countTracks,
+    Key? key,
+    required this.duration,
+    required this.trackBuilder,
+    required this.countTracks,
     this.timelineTextStyle,
     this.timeWidgetBuilder,
     this.scaleController,
@@ -103,40 +103,40 @@ class TimelineEditor extends StatefulWidget {
 
 class _TimelineEditorState extends State<TimelineEditor> {
   double scale = 1;
-  double widgetWidth;
-  double previousScale;
-  double pps;
-  double timeBlockSize;
+  double? widgetWidth;
+  double? previousScale;
+  double? pps;
+  late double timeBlockSize;
 
-  Duration _timeUnderFocal;
-  double scaleFocal;
+  Duration? _timeUnderFocal;
+  double? scaleFocal;
 
   double get scaledPixelPerSeconds => (pps ?? 1) * scale;
 
-  TimelineEditorScaleController _ownScaleController;
-  TimelineEditorScaleController get scaleController {
+  TimelineEditorScaleController? _ownScaleController;
+  TimelineEditorScaleController? get scaleController {
     if (widget.scaleController == null && _ownScaleController == null)
       _ownScaleController = TimelineEditorScaleController();
 
     return widget.scaleController ?? _ownScaleController;
   }
 
-  ScrollController scrollController;
-  LinkedScrollControllerGroup _controllers;
+  ScrollController? scrollController;
+  LinkedScrollControllerGroup? _controllers;
 
-  double previousMaxWidth;
+  double? previousMaxWidth;
   String twoDigits(int n) {
     if (n >= 10) return "$n";
     return "0$n";
   }
 
-  void updateTimeBlockSize(double displayWidth) {
+  void updateTimeBlockSize(double? displayWidth) {
     if (widget.timeWidgetEvery != null) {
       timeBlockSize =
-          widget.timeWidgetEvery.inSecondsAsDouble * scaledPixelPerSeconds;
+          widget.timeWidgetEvery!.inSecondsAsDouble * scaledPixelPerSeconds;
     } else {
       var targetNumberOfTimeWidget =
-          displayWidth / (widget.minimumTimeWidgetExtent ?? 70);
+          displayWidth! / (widget.minimumTimeWidgetExtent ?? 70);
       var targetDurationOfTimeWidget = durationFromSeconds(
           displayWidth / scaledPixelPerSeconds / targetNumberOfTimeWidget);
       if (targetDurationOfTimeWidget.inSeconds < 5)
@@ -154,9 +154,9 @@ class _TimelineEditorState extends State<TimelineEditor> {
     }
   }
 
-  void computePPS(double width) {
+  void computePPS(double? width) {
     widgetWidth = width;
-    pps = widgetWidth / durationToSeconds(widget.duration);
+    pps = widgetWidth! / durationToSeconds(widget.duration);
     updateTimeBlockSize(width);
   }
 
@@ -185,15 +185,15 @@ class _TimelineEditorState extends State<TimelineEditor> {
   void _onScaleStart(double dx) {
     previousScale = scale;
     _timeUnderFocal =
-        durationFromSeconds((dx + scrollController.offset) / pps / scale);
+        durationFromSeconds((dx + scrollController!.offset) / pps! / scale);
     // (details.focalPoint.dx + scrollController.offset) / pps / scale);
   }
 
   void _onScaleUpdate(double details) {
     // print("Details $details");
-    var newScale = previousScale * details; //.scale;
+    var newScale = previousScale! * details; //.scale;
     if (newScale < 1) newScale = 1;
-    scaleController.setScale(newScale);
+    scaleController!.setScale(newScale);
   }
 
   void _onScaleEnd(_) {
@@ -214,21 +214,21 @@ class _TimelineEditorState extends State<TimelineEditor> {
   void initState() {
     super.initState();
     _controllers = LinkedScrollControllerGroup();
-    scrollController = _controllers.addAndGet();
-    scaleController.scaleUpdates.listen((s) {
+    scrollController = _controllers!.addAndGet();
+    scaleController!.scaleUpdates.listen((s) {
       if (scale != s) {
         setState(() => scale = s);
         updateTimeBlockSize(widgetWidth);
-        var offset = _controllers.offset;
-        _controllers.resetScroll();
-        _controllers.jumpTo(offset);
+        var offset = _controllers!.offset;
+        _controllers!.resetScroll();
+        _controllers!.jumpTo(offset);
       }
     });
   }
 
   @override
   void dispose() {
-    scrollController.dispose();
+    scrollController!.dispose();
     _ownScaleController?.dispose();
     super.dispose();
   }
@@ -279,11 +279,11 @@ class _TimelineEditorState extends State<TimelineEditor> {
                 }
 
                 var totalTimeSlots =
-                    ((widgetWidth * scale) / timeBlockSize).ceil();
+                    ((widgetWidth! * scale) / timeBlockSize).ceil();
                 var totalFullTimeSlots =
-                    ((widgetWidth * scale) / timeBlockSize).floor();
+                    ((widgetWidth! * scale) / timeBlockSize).floor();
                 var lastTimeBlockSize =
-                    (((widgetWidth * scale) / timeBlockSize) -
+                    (((widgetWidth! * scale) / timeBlockSize) -
                             totalFullTimeSlots) *
                         timeBlockSize;
 
@@ -306,7 +306,7 @@ class _TimelineEditorState extends State<TimelineEditor> {
                                           widget.duration, _controllers)
                                       .trackHeight,
                                   child: widget.leadingWidgetBuilder != null
-                                      ? widget.leadingWidgetBuilder(i)
+                                      ? widget.leadingWidgetBuilder!(i)
                                       : SizedBox.shrink())),
                         ],
                       ),
@@ -346,16 +346,16 @@ class _TimelineEditorState extends State<TimelineEditor> {
                                 builder: (context, snapshot) {
                                   return snapshot.hasData
                                       ? Positioned(
-                                          left: (snapshot.data *
+                                          left: (snapshot.data! *
                                                   scaledPixelPerSeconds) -
-                                              scrollController.position.pixels,
+                                              scrollController!.position.pixels,
                                           top: 0,
                                           bottom: 0,
                                           child: Container(
                                             color: Colors.red,
                                             width: 5,
                                           ))
-                                      : null;
+                                      : SizedBox.shrink();
                                 })
                           ],
                         ),
@@ -376,7 +376,7 @@ class _TimelineEditorState extends State<TimelineEditor> {
     if (widget.timeWidgetBuilder != null)
       return SizedBox(
         width: finalBlocksEvery,
-        child: widget.timeWidgetBuilder(
+        child: widget.timeWidgetBuilder!(
           pos,
           widget.duration,
         ),

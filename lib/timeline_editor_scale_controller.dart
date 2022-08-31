@@ -7,7 +7,7 @@ class TimelineEditorScaleController {
       BehaviorSubject<double>.seeded(1);
 
   /// max zoom scale
-  final double maxScale;
+  final double? maxScale;
 
   /// min zoom scale. Default to 1
   final double minScale;
@@ -23,7 +23,7 @@ class TimelineEditorScaleController {
 
   void setScale(double scale) {
     if ((minScale == null || scale >= minScale) &&
-        (maxScale == null || scale <= maxScale))
+        (maxScale == null || scale <= maxScale!))
       _scaleStreamController.add(scale);
   }
 

@@ -9,46 +9,46 @@ class TimelineEditorCard extends ITimelineEditorCard {
   final bool selected;
 
   /// When the user tap the box. Can be used to toggle selected status
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   /// this box is a separated and not a card
-  final bool isSeparator;
+  final bool? isSeparator;
 
   /// optional  custom child to display in this box
-  final Widget child;
+  final Widget? child;
 
   /// background color of this box
-  final Color color;
+  final Color? color;
 
   /// optional border color when selected
-  final Color borderColor;
+  final Color? borderColor;
 
   /// optional [PopupMenuEntry] list to display if a user long press this box
-  final List<PopupMenuEntry> menuEntries;
+  final List<PopupMenuEntry>? menuEntries;
 
   /// optional callback when a user click on one of the [menuEntries]
-  final void Function(Object selectedItem) onSelectedMenuItem;
+  final void Function(Object selectedItem)? onSelectedMenuItem;
 
   /// optional callback that will activate the
   /// possibility of moving this box
-  final void Function(Duration duration) onMovedDuration;
+  final void Function(Duration duration)? onMovedDuration;
 
   /// optional callback that will activate the
   /// possibility of moving this box
-  final void Function(Duration duration) onMovedStart;
+  final void Function(Duration duration)? onMovedStart;
 
   /// optional icon for [onMovedStart]
-  final Icon onMovedStartIcon;
+  final Icon? onMovedStartIcon;
 
   /// optional icon for [onMovedDuration]
-  final Icon onMovedDurationIcon;
+  final Icon? onMovedDurationIcon;
 
   /// optional icon for [menuEntries]
-  final Icon menuEntriesIcon;
+  final Icon? menuEntriesIcon;
 
   const TimelineEditorCard(Duration start,
-      {Key key,
-      Duration duration,
+      {Key? key,
+      Duration? duration,
       this.isSeparator,
       this.selected = false,
       this.onTap,
@@ -68,10 +68,10 @@ class TimelineEditorCard extends ITimelineEditorCard {
   Widget build(
     BuildContext context,
     double pixelsPerSeconds, {
-    Duration availableSpace,
+    Duration? availableSpace,
   }) {
     return TimelineEditorSizedBox(
-      duration: duration ?? (start - availableSpace),
+      duration: duration ?? (start! - availableSpace!),
       pixelsPerSeconds: pixelsPerSeconds,
       child: GestureDetector(
         onTap: onTap,
@@ -80,18 +80,21 @@ class TimelineEditorCard extends ITimelineEditorCard {
           color: color,
           elevation: 2,
           child: Stack(children: [
-            child != null ? Positioned.fill(child: child) : Container(),
+            child != null ? Positioned.fill(child: child!) : Container(),
             if (selected)
               Positioned.fill(
                 child: Container(
                   decoration: BoxDecoration(
-                    border: Border.all(color: borderColor != null ? borderColor : Colors.white, width: 6),
+                    border: Border.all(
+                        color:
+                            borderColor != null ? borderColor! : Colors.white,
+                        width: 6),
                   ),
                 ),
               ),
             if (onMovedDuration != null && selected)
               GestureDetector(
-                onHorizontalDragUpdate: (d) => onMovedDuration(
+                onHorizontalDragUpdate: (d) => onMovedDuration!(
                     durationFromSeconds(d.delta.dx / pixelsPerSeconds)),
                 child: Align(
                   alignment: Alignment.centerRight,
@@ -100,19 +103,19 @@ class TimelineEditorCard extends ITimelineEditorCard {
                     width: 30,
                     child: Container(
                       color: borderColor != null ? borderColor : Colors.white,
-                      child: onMovedDurationIcon != null 
-                      ? onMovedDurationIcon 
-                      : Icon(
-                        Icons.swap_horiz,
-                        color: Colors.black,
-                      ),
+                      child: onMovedDurationIcon != null
+                          ? onMovedDurationIcon
+                          : Icon(
+                              Icons.swap_horiz,
+                              color: Colors.black,
+                            ),
                     ),
                   ),
                 ),
               ),
             if (onMovedStart != null && selected)
               GestureDetector(
-                onHorizontalDragUpdate: (d) => onMovedStart(
+                onHorizontalDragUpdate: (d) => onMovedStart!(
                     durationFromSeconds(d.delta.dx / pixelsPerSeconds)),
                 child: Align(
                   alignment: Alignment.centerLeft,
@@ -121,12 +124,12 @@ class TimelineEditorCard extends ITimelineEditorCard {
                     width: 30,
                     child: Container(
                       color: borderColor != null ? borderColor : Colors.white,
-                      child: onMovedStartIcon != null 
-                      ? onMovedStartIcon 
-                      : Icon(
-                        Icons.swap_horiz,
-                        color: Colors.black,
-                      ),
+                      child: onMovedStartIcon != null
+                          ? onMovedStartIcon
+                          : Icon(
+                              Icons.swap_horiz,
+                              color: Colors.black,
+                            ),
                     ),
                   ),
                 ),
@@ -138,18 +141,18 @@ class TimelineEditorCard extends ITimelineEditorCard {
                   height: 30,
                   width: 30,
                   child: PopupMenuButton(
-                    onSelected: (v) => onSelectedMenuItem(v),
+                    onSelected: (dynamic v) => onSelectedMenuItem!(v),
                     itemBuilder: (BuildContext context) {
-                      return menuEntries;
+                      return menuEntries!;
                     },
                     child: Container(
                       color: borderColor != null ? borderColor : Colors.white,
-                      child: menuEntriesIcon != null 
-                      ? menuEntriesIcon 
-                      : Icon(
-                        Icons.menu,
-                        color: Colors.black,
-                      ),
+                      child: menuEntriesIcon != null
+                          ? menuEntriesIcon
+                          : Icon(
+                              Icons.menu,
+                              color: Colors.black,
+                            ),
                     ),
                   ),
                 ),
@@ -162,13 +165,13 @@ class TimelineEditorCard extends ITimelineEditorCard {
 }
 
 class TimelineEditorEmptyCard extends ITimelineEditorCard {
-  const TimelineEditorEmptyCard(Duration start, Duration duration, {Key key})
+  const TimelineEditorEmptyCard(Duration start, Duration? duration, {Key? key})
       : super(key: key, start: start, duration: duration);
 
   Widget build(
     BuildContext context,
     double pixelsPerSeconds, {
-    Duration availableSpace,
+    Duration? availableSpace,
   }) {
     return TimelineEditorSizedBox(
       duration: duration,
@@ -179,39 +182,39 @@ class TimelineEditorEmptyCard extends ITimelineEditorCard {
 }
 
 abstract class ITimelineEditorCard {
-  final Key key;
+  final Key? key;
 
   /// duration in seconds of the box. Let it null for continuous boxes
-  final Duration duration;
+  final Duration? duration;
 
   /// the start time in seconds of this box
-  final Duration start;
+  final Duration? start;
   @mustCallSuper
   const ITimelineEditorCard({this.key, this.start, this.duration});
 
   Widget build(
     BuildContext context,
     double pixelsPerSeconds, {
-    Duration availableSpace,
+    Duration? availableSpace,
   });
 }
 
 class TimelineEditorSizedBox extends StatelessWidget {
-  final Duration duration;
+  final Duration? duration;
   final double pixelsPerSeconds;
-  final double height;
+  final double? height;
   final Widget child;
 
   const TimelineEditorSizedBox({
-    Key key,
+    Key? key,
     this.height,
-    @required this.duration,
-    @required this.pixelsPerSeconds,
-    @required this.child,
+    required this.duration,
+    required this.pixelsPerSeconds,
+    required this.child,
   }) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    var width = durationToSeconds(duration) * pixelsPerSeconds;
+    var width = durationToSeconds(duration!) * pixelsPerSeconds;
     return SizedBox(
       width: width > 0 ? width : 0,
       height: height ?? 100,
@@ -224,21 +227,21 @@ class TimelineEditorSizedBox extends StatelessWidget {
 class TimelineEditorTrack extends StatefulWidget {
   final List<ITimelineEditorCard> boxes;
   final double pixelsPerSeconds;
-  final LinkedScrollControllerGroup scrollControllers;
+  final LinkedScrollControllerGroup? scrollControllers;
 
   /// height of this track
   final double trackHeight;
 
   final Duration duration;
 
-  final Color defaultColor;
+  final Color? defaultColor;
 
   const TimelineEditorTrack(
-      {Key key,
-      @required this.scrollControllers,
-      @required this.boxes,
-      @required this.pixelsPerSeconds,
-      @required this.duration,
+      {Key? key,
+      required this.scrollControllers,
+      required this.boxes,
+      required this.pixelsPerSeconds,
+      required this.duration,
       this.trackHeight = 100,
       this.defaultColor})
       : super(key: key);
@@ -248,19 +251,19 @@ class TimelineEditorTrack extends StatefulWidget {
 }
 
 class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
-  List<ITimelineEditorCard> boxes;
-  ScrollController _controller;
+  List<ITimelineEditorCard>? boxes;
+  ScrollController? _controller;
 
   @override
   void initState() {
     super.initState();
     setup();
-    _controller = widget.scrollControllers.addAndGet();
+    _controller = widget.scrollControllers!.addAndGet();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller!.dispose();
     super.dispose();
   }
 
@@ -273,11 +276,11 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
   }
 
   void setup() {
-    List<ITimelineEditorCard> targetBoxes = List<ITimelineEditorCard>();
+    List<ITimelineEditorCard> targetBoxes = <ITimelineEditorCard>[];
 
     if (widget.boxes != null && widget.boxes.length > 0) {
       var sortedStart = widget.boxes.toList();
-      sortedStart.sort((a, b) => a.start.compareTo(b.start));
+      sortedStart.sort((a, b) => a.start!.compareTo(b.start!));
       var blankFirstBox = TimelineEditorEmptyCard(
         Duration.zero,
         sortedStart[0].start,
@@ -287,9 +290,9 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
       for (var box in sortedStart) {
         i++;
         var nextBoxTime =
-            i < sortedStart.length ? sortedStart[i].start : widget.duration;
+            i < sortedStart.length ? sortedStart[i].start! : widget.duration;
         targetBoxes.add(box);
-        var end = box.start + box.duration;
+        var end = box.start! + box.duration!;
         targetBoxes.add(
           TimelineEditorEmptyCard(
             end,
@@ -323,11 +326,11 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
           key: widget.key,
           scrollDirection: Axis.horizontal,
           controller: _controller,
-          itemCount: boxes.length,
+          itemCount: boxes!.length,
           itemBuilder: (context, index) {
-            var b = boxes[index];
-            var availableSpace = boxes.length > index + 2
-                ? boxes[index + 1].start
+            var b = boxes![index];
+            var availableSpace = boxes!.length > index + 2
+                ? boxes![index + 1].start
                 : widget.duration;
 
             return b.build(context, widget.pixelsPerSeconds,

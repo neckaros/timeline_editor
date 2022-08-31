@@ -31,16 +31,16 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   double position = 0;
   bool customTimeString = false;
   bool withHeaders = false;
-  StreamController<double> positionController;
-  Timer progressTimer;
-  TimelineEditorScaleController scaleController;
+  StreamController<double>? positionController;
+  Timer? progressTimer;
+  late TimelineEditorScaleController scaleController;
 
-  double scale;
+  double? scale;
 
   double _trackHeight = 100;
 
-  AnimationController _controller;
-  Animation<double> _animation;
+  AnimationController? _controller;
+  late Animation<double> _animation;
 
   void moveBox1(Duration newStart) {
     if (box1Start + newStart < Duration.zero) {
@@ -102,10 +102,10 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
       setState(() => box2bDuration = box2bDuration + move);
   }
 
-  void positionUpdate(Timer timer) {
+  void positionUpdate(Timer? timer) {
     position += 0.350;
     if (position > 300) position = 0;
-    positionController.add(position);
+    positionController!.add(position);
     /* if (position + 0.1 < 300)
       Timer(Duration(milliseconds: 100), () => positionUpdate());*/
   }
@@ -118,7 +118,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
     progressTimer = Timer.periodic(Duration(milliseconds: 350), positionUpdate);
     _controller =
         AnimationController(vsync: this, duration: Duration(seconds: 2));
-    _animation = Tween(begin: 100.0, end: 200.0).animate(_controller)
+    _animation = Tween(begin: 100.0, end: 200.0).animate(_controller!)
       ..addListener(() {
         setState(() => _trackHeight = _animation.value);
       });
@@ -160,10 +160,10 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                 RaisedButton(
                   child: const Text('Change track height'),
                   onPressed: () =>
-                      _controller.status == AnimationStatus.forward ||
-                              _controller.status == AnimationStatus.completed
-                          ? _controller.reverse()
-                          : _controller.forward(),
+                      _controller!.status == AnimationStatus.forward ||
+                              _controller!.status == AnimationStatus.completed
+                          ? _controller!.reverse()
+                          : _controller!.forward(),
                 ),
                 SwitchListTile(
                     title: Text('Custom time string'),
@@ -198,14 +198,14 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                           )
                       : null,
                   onPositionTap: (s) => position = s,
-                  positionStream: positionController.stream,
+                  positionStream: positionController!.stream,
                   countTracks: 2,
                   trackBuilder: (track, pps, duration, scrollControllers) =>
                       track == 0
                           ? TimelineEditorTrack(
                               // key: Key('separated'),
                               scrollControllers: scrollControllers,
-                              defaultColor: Colors.green[700],
+                              defaultColor: Colors.green[700]!,
                               boxes: [
                                 TimelineEditorCard(
                                   box1Start,
@@ -239,7 +239,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                           : TimelineEditorTrack(
                               // key: Key('separated'),
                               scrollControllers: scrollControllers,
-                              defaultColor: Colors.green[700],
+                              defaultColor: Colors.green[700]!,
                               boxes: [
                                 TimelineEditorCard(
                                   box1Start,
