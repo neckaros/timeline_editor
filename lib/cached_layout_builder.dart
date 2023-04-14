@@ -5,24 +5,26 @@ class CachedLayoutBuilder extends StatefulWidget {
       builder;
   final List<dynamic> parentParameters;
 
-  const CachedLayoutBuilder({Key key, this.builder, this.parentParameters})
-      : super(key: key);
+  const CachedLayoutBuilder({
+    super.key,
+    required this.builder,
+    required this.parentParameters,
+  });
+
   @override
-  _CachedLayoutBuilderState createState() => _CachedLayoutBuilderState();
+  State<CachedLayoutBuilder> createState() => _CachedLayoutBuilderState();
 }
 
 class _CachedLayoutBuilderState extends State<CachedLayoutBuilder> {
-  Widget previousBuild;
-  BoxConstraints previousContraints;
-  List<dynamic> previousParameters;
+  late Widget previousBuild;
+  BoxConstraints? previousContraints;
+  List<dynamic> previousParameters = [];
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (ctx, constraints) {
       var parametersIdentical = true;
-      if (previousParameters == null ||
-          widget.parentParameters == null ||
-          previousParameters.length != widget.parentParameters.length) {
+      if (previousParameters.length != widget.parentParameters.length) {
         parametersIdentical = false;
       } else {
         for (var i = 0; i < previousParameters.length; i++) {
