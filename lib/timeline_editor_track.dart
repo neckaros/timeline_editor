@@ -275,7 +275,28 @@ class TimelineEditorSizedBox extends StatelessWidget {
   }
 }
 
-/// A track that can be used with the [timeline_editor] builder
+/// A widget that displays a horizontal timeline track for a given duration, with customizable cards displayed
+/// along the timeline. Each card can represent a block of time and can be interacted with by the user.
+///
+/// The [boxes] list contains the cards to be displayed on the track. Each card must implement the [ITimelineEditorCard]
+/// interface.
+///
+/// The [pixelsPerSeconds] parameter determines how many pixels represent one second on the timeline. This value
+/// affects the scale of the timeline and how quickly the user can scrub through it.
+///
+/// The [scrollControllers] parameter is a [LinkedScrollControllerGroup] that links the scrolling behavior of this
+/// track with other tracks in the timeline editor. This allows the user to horizontally scroll through multiple
+/// tracks at once.
+///
+/// The [onEmptySlotTap] parameter is a callback that is called when the user taps an empty space on the timeline.
+/// It provides a [TimelineEditorEmptyCardTapResult] object that contains information about the tapped location
+/// on the timeline, such as the start time and duration of the selected area.
+///
+/// The [trackHeight] parameter determines the height of the track.
+///
+/// The [duration] parameter specifies the total duration of the timeline.
+///
+/// The [defaultColor] parameter specifies the default color to use for cards that do not provide their own color.
 class TimelineEditorTrack extends StatefulWidget {
   final List<ITimelineEditorCard> boxes;
   final double pixelsPerSeconds;
