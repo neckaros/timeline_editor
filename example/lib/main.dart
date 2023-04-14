@@ -13,7 +13,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   Duration totalDuration = Duration(seconds: 600);
 
-  Duration box1Start = Duration(seconds: 30);
+  Duration box1Start = Duration(seconds: 0);
   Duration box1Duration = Duration(seconds: 50);
   bool box1Selected = false;
   Duration box2Start = Duration(seconds: 100);
@@ -208,6 +208,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                               // key: Key('separated'),
                               scrollControllers: scrollControllers,
                               defaultColor: Colors.green[700],
+                              onEmptySlotTap: print,
                               boxes: [
                                 TimelineEditorCard(
                                   box1Start,

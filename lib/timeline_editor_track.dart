@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:linked_scroll_controller/linked_scroll_controller.dart';
+
 import 'package:timeline_editor/extensions.dart';
 
 /// a box to be displayed in a [TimelineEditorTrack] with a [start] and a [duration]
@@ -164,22 +165,63 @@ class TimelineEditorCard extends ITimelineEditorCard {
   }
 }
 
+class TimelineEditorEmptyCardTapResult {
+  final Duration start;
+  final Duration end;
+  final Duration duration;
+  final Duration tap;
+
+  const TimelineEditorEmptyCardTapResult({
+    required this.start,
+    required this.duration,
+    required this.tap,
+  }) : end = start + duration;
+
+  @override
+  String toString() =>
+      'TimelineEditorEmptyCardTapResult(start: $start, end: $end, tap: $tap)';
+}
+
 class TimelineEditorEmptyCard extends ITimelineEditorCard {
+  final ValueChanged<TimelineEditorEmptyCardTapResult>? onTap;
   const TimelineEditorEmptyCard({
-    required super.start,
-    required super.duration,
     super.key,
-  });
+    required super.start,
+    required Duration duration,
+    required this.onTap,
+  }) : super(duration: duration);
 
   Widget build(
     BuildContext context, {
     required double pixelsPerSeconds,
     required Duration availableSpace,
   }) {
-    return TimelineEditorSizedBox(
+    final card = TimelineEditorSizedBox(
       duration: duration,
       pixelsPerSeconds: pixelsPerSeconds,
       child: Container(),
+    );
+
+    if (onTap == null) {
+      return card;
+    }
+
+    return GestureDetector(
+      onTapUp: (details) {
+        final tap = start +
+            durationFromSeconds(
+              details.localPosition.dx / pixelsPerSeconds,
+            );
+        onTap!.call(TimelineEditorEmptyCardTapResult(
+          start: start,
+          duration: duration!,
+          tap: tap,
+        ));
+      },
+      child: Container(
+        color: Colors.transparent,
+        child: card,
+      ),
     );
   }
 }
@@ -238,6 +280,7 @@ class TimelineEditorTrack extends StatefulWidget {
   final List<ITimelineEditorCard> boxes;
   final double pixelsPerSeconds;
   final LinkedScrollControllerGroup scrollControllers;
+  final ValueChanged<TimelineEditorEmptyCardTapResult>? onEmptySlotTap;
 
   /// height of this track
   final double trackHeight;
@@ -254,6 +297,7 @@ class TimelineEditorTrack extends StatefulWidget {
     required this.duration,
     this.trackHeight = 100,
     this.defaultColor,
+    this.onEmptySlotTap,
   });
 
   @override
@@ -294,6 +338,7 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
       final blankFirstBox = TimelineEditorEmptyCard(
         start: Duration.zero,
         duration: sortedStart[0].start,
+        onTap: widget.onEmptySlotTap,
       );
       targetBoxes.add(blankFirstBox);
       var i = 0;
@@ -307,6 +352,7 @@ class _TimelineEditorTrackState extends State<TimelineEditorTrack> {
         targetBoxes.add(TimelineEditorEmptyCard(
           start: end,
           duration: nextBoxTime - end,
+          onTap: widget.onEmptySlotTap,
         ));
       }
     }
