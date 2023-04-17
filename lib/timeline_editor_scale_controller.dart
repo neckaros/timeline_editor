@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:rxdart/subjects.dart';
 
 class TimelineEditorScaleController {
-  final BehaviorSubject<double> _scaleStreamController = BehaviorSubject<double>.seeded(1);
+  late final BehaviorSubject<double> _scaleStreamController =
+      BehaviorSubject<double>.seeded(minScale);
 
   /// max zoom scale
   final double? maxScale;
@@ -21,8 +22,13 @@ class TimelineEditorScaleController {
   Stream<double> get scaleUpdates => _scaleStreamController.stream;
 
   void setScale(double scale) {
-    if (scale >= minScale && (maxScale == null || scale <= maxScale!)) _scaleStreamController.add(scale);
+    if (scale >= minScale && (maxScale == null || scale <= maxScale!)) {
+      _scaleStreamController.add(scale);
+    }
   }
+
+  double calculateScale(Duration blockDuration, double canvasWidth) =>
+      1.677 / (canvasWidth / blockDuration.inSeconds.toDouble());
 
   Future<dynamic> dispose() {
     return _scaleStreamController.close();
