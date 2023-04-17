@@ -1,11 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 
-Duration durationFromSeconds(double seconds) => Duration(microseconds: (seconds * 1000000).round());
+Duration durationFromSeconds(double seconds) =>
+    Duration(microseconds: (seconds * 1000000).round());
 
-double durationToSeconds(Duration duration) => duration.inMicroseconds / 1000000;
+double durationToSeconds(Duration duration) =>
+    duration.inMicroseconds / 1000000;
 
-Offset localToGlobal(RenderSliver sliver, Offset point, {RenderObject? ancestor}) {
+Offset localToGlobal(RenderSliver sliver, Offset point,
+    {RenderObject? ancestor}) {
   return MatrixUtils.transformPoint(getTransformTo(sliver, ancestor), point);
 }
 
@@ -19,7 +22,9 @@ Matrix4 getTransformTo(RenderSliver sliver, RenderObject? ancestor) {
     if (rootNode is RenderObject) ancestor = rootNode;
   }
   final List<RenderObject> renderers = <RenderObject>[];
-  for (AbstractNode? renderer = sliver; renderer != ancestor; renderer = renderer.parent) {
+  for (AbstractNode? renderer = sliver;
+      renderer != ancestor;
+      renderer = renderer.parent) {
     if (renderer is RenderObject) {
       renderers.add(renderer);
     } else {
