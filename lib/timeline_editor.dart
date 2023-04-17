@@ -55,9 +55,6 @@ class TimelineEditor extends StatefulWidget {
   /// By default we use Theme.of(context).brightness == Brightness.dark ? Colors.white60 : Colors.black87
   final Color? separatorColor;
 
-  /// optional distance in seconds between each time indicator
-  final Duration blocksEvery;
-
   /// a Widget that can be displayed as headding for leading widgets.
   final Widget? timelineLeadingWidget;
 
@@ -70,9 +67,6 @@ class TimelineEditor extends StatefulWidget {
   /// optional position stream in the timeline for the position indicator
   /// we use stream to avoid rebuilding the whole widget for each position change
   final Stream<double>? positionStream;
-
-  /// user whant to switch to a time position in seconds
-  final void Function(double position)? onPositionTap;
 
   /// scale controller use to
   /// manually set scale
@@ -93,8 +87,6 @@ class TimelineEditor extends StatefulWidget {
     this.minimumTimeWidgetExtent = 70,
     this.separatorColor,
     this.positionStream,
-    this.blocksEvery = const Duration(seconds: 5),
-    this.onPositionTap,
     this.timelineLeadingWidget,
     this.leadingWidgetBuilder,
   });
@@ -104,20 +96,19 @@ class TimelineEditor extends StatefulWidget {
 }
 
 class _TimelineEditorState extends State<TimelineEditor> {
-  double scale = 1;
+  late double scale = scaleController.minScale;
   late double widgetWidth;
   double? previousScale;
   double? pps;
-  late double timeBlockSize;
-
-  double? scaleFocal;
+  late double timeBlockSize = widget.minimumTimeWidgetExtent;
 
   double get scaledPixelPerSeconds => (pps ?? 1) * scale;
 
   TimelineEditorScaleController? _ownScaleController;
   TimelineEditorScaleController get scaleController {
-    if (widget.scaleController == null && _ownScaleController == null)
+    if (widget.scaleController == null && _ownScaleController == null) {
       _ownScaleController = TimelineEditorScaleController();
+    }
 
     return widget.scaleController ?? _ownScaleController!;
   }
@@ -133,28 +124,41 @@ class _TimelineEditorState extends State<TimelineEditor> {
     return "0$n";
   }
 
+  static double _calculateTimeBlockSizeFromBreakpoints({
+    required double displayWidth,
+    required double scaledPixelPerSeconds,
+    required double minimumTimeWidth,
+  }) {
+    const List<Map<String, dynamic>> breakpoints = [
+      {'duration': Duration(seconds: 5), 'size': 5},
+      {'duration': Duration(seconds: 10), 'size': 10},
+      {'duration': Duration(seconds: 30), 'size': 30},
+      {'duration': Duration(minutes: 1), 'size': 60},
+    ];
+    var targetNumberOfTimeWidget = displayWidth / minimumTimeWidth;
+    var targetDurationOfTimeWidget = durationFromSeconds(
+        displayWidth / scaledPixelPerSeconds / targetNumberOfTimeWidget);
+
+    final breakpoint = breakpoints.firstWhere(
+      (element) => targetDurationOfTimeWidget < element['duration'],
+      orElse: () => {'size': targetDurationOfTimeWidget.inSeconds - 60},
+    );
+
+    return breakpoint['size'] * scaledPixelPerSeconds;
+  }
+
   void updateTimeBlockSize(double displayWidth) {
     if (widget.timeWidgetEvery != null) {
       timeBlockSize =
           widget.timeWidgetEvery!.inSecondsAsDouble * scaledPixelPerSeconds;
-    } else {
-      var targetNumberOfTimeWidget =
-          displayWidth / widget.minimumTimeWidgetExtent;
-      var targetDurationOfTimeWidget = durationFromSeconds(
-          displayWidth / scaledPixelPerSeconds / targetNumberOfTimeWidget);
-      if (targetDurationOfTimeWidget.inSeconds < 5)
-        timeBlockSize = 5 * scaledPixelPerSeconds;
-      else if (targetDurationOfTimeWidget.inSeconds < 10)
-        timeBlockSize = 10 * scaledPixelPerSeconds;
-      else if (targetDurationOfTimeWidget.inSeconds < 30)
-        timeBlockSize = 30 * scaledPixelPerSeconds;
-      else if (targetDurationOfTimeWidget.inMinutes < 1)
-        timeBlockSize = 60 * scaledPixelPerSeconds;
-      else if (targetDurationOfTimeWidget.inMinutes < 60)
-        timeBlockSize = (targetDurationOfTimeWidget.inMinutes + 1) *
-            60 *
-            scaledPixelPerSeconds;
+      return;
     }
+
+    timeBlockSize = _calculateTimeBlockSizeFromBreakpoints(
+      displayWidth: displayWidth,
+      scaledPixelPerSeconds: scaledPixelPerSeconds,
+      minimumTimeWidth: widget.minimumTimeWidgetExtent,
+    );
   }
 
   void computePPS(double width) {
@@ -163,26 +167,27 @@ class _TimelineEditorState extends State<TimelineEditor> {
     updateTimeBlockSize(width);
   }
 
-  String secondsToString(Duration duration, Duration totalDuration) {
-    var _duration = Duration(microseconds: duration.inMicroseconds);
-    int weeks = _duration.inDays > 7 ? (_duration.inDays / 7).floor() : 0;
-    _duration = _duration - Duration(days: weeks * 7);
-    int days = _duration.inDays;
-    _duration = _duration - Duration(days: _duration.inDays);
-    int hours = _duration.inHours;
-    _duration = _duration - Duration(hours: _duration.inHours);
-    int minutes = _duration.inMinutes;
-    _duration = _duration - Duration(minutes: _duration.inMinutes);
-    int seconds = _duration.inSeconds;
+  String secondsToString(Duration duration) {
+    var curDuration = Duration(microseconds: duration.inMicroseconds);
+    final weeks = curDuration.inDays > 7 ? (curDuration.inDays / 7).floor() : 0;
+    curDuration = curDuration - Duration(days: weeks * 7);
+    final days = curDuration.inDays;
+    curDuration = curDuration - Duration(days: curDuration.inDays);
+    final hours = curDuration.inHours;
+    curDuration = curDuration - Duration(hours: curDuration.inHours);
+    final minutes = curDuration.inMinutes;
+    curDuration = curDuration - Duration(minutes: curDuration.inMinutes);
+    final seconds = curDuration.inSeconds;
 
-    if (weeks > 1)
+    if (weeks >= 1) {
       return '${weeks}w${days}d';
-    else if (days > 1)
+    } else if (days >= 1) {
       return '${days}d ${hours}h';
-    else if (hours > 1)
+    } else if (hours >= 1) {
       return '${hours}h${twoDigits(minutes)}';
-    else
+    } else {
       return '${twoDigits(minutes)}:${twoDigits(seconds)}';
+    }
   }
 
   void _onScaleStart(double dx) {
@@ -191,10 +196,8 @@ class _TimelineEditorState extends State<TimelineEditor> {
   }
 
   void _onScaleUpdate(double details) {
-    // print("Details $details");
-    var newScale = (previousScale ?? scale) * details; //.scale;
-    if (newScale < 1) newScale = 1;
-    scaleController.setScale(newScale);
+    final newScale = (previousScale ?? scale) * details; //.scale;
+    scaleController.setScale(newScale >= 1 ? newScale : 1);
   }
 
   void _onScaleEnd(_) {
@@ -219,18 +222,22 @@ class _TimelineEditorState extends State<TimelineEditor> {
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       previousMaxWidth = MediaQuery.of(context).size.width;
+      computePPS(previousMaxWidth);
+      setState(() {});
+    });
 
-      _scaleSubscription = scaleController.scaleUpdates.listen((s) {
-        if (scale == s) {
-          return;
-        }
+    _scaleSubscription = scaleController.scaleUpdates.listen((s) {
+      while (!mounted) {}
 
-        setState(() => scale = s);
-        updateTimeBlockSize(widgetWidth);
+      if (scale == s) {
+        return;
+      }
 
-        _controllers.resetScroll();
-        _controllers.jumpTo(_controllers.offset);
-      });
+      setState(() => scale = s);
+      updateTimeBlockSize(widgetWidth);
+
+      _controllers.resetScroll();
+      _controllers.jumpTo(_controllers.offset);
     });
   }
 
@@ -275,8 +282,6 @@ class _TimelineEditorState extends State<TimelineEditor> {
                 widget.trackBuilder,
                 widget.countTracks,
                 widget.positionStream,
-                widget.blocksEvery,
-                widget.onPositionTap,
                 widget.separatorColor,
                 widget.timelineTextStyle,
                 Theme.of(context).brightness,
@@ -320,7 +325,7 @@ class _TimelineEditorState extends State<TimelineEditor> {
                                   .trackHeight,
                               child: widget.leadingWidgetBuilder != null
                                   ? widget.leadingWidgetBuilder!(i)
-                                  : SizedBox.shrink(),
+                                  : const SizedBox.shrink(),
                             ),
                           ),
                         ],
@@ -330,10 +335,10 @@ class _TimelineEditorState extends State<TimelineEditor> {
                           children: [
                             Column(
                               children: <Widget>[
-                                Container(
+                                SizedBox(
                                   height: widget.timeHeight,
                                   child: ListView.builder(
-                                      key: Key('timelineeditor-times'),
+                                      key: const Key('timelineeditor-times'),
                                       controller: scrollController,
                                       scrollDirection: Axis.horizontal,
                                       itemCount: totalTimeSlots,
@@ -386,11 +391,15 @@ class _TimelineEditorState extends State<TimelineEditor> {
     );
   }
 
-  Widget buildTextTime(int i, double scaledPixelsPerSeconds,
-      double finalBlocksEvery, BuildContext context) {
+  Widget buildTextTime(
+    int i,
+    double scaledPixelsPerSeconds,
+    double finalBlocksEvery,
+    BuildContext context,
+  ) {
     var pos =
         durationFromSeconds(i * finalBlocksEvery / scaledPixelsPerSeconds);
-    if (widget.timeWidgetBuilder != null)
+    if (widget.timeWidgetBuilder != null) {
       return SizedBox(
         width: finalBlocksEvery,
         child: widget.timeWidgetBuilder!(
@@ -398,6 +407,7 @@ class _TimelineEditorState extends State<TimelineEditor> {
           widget.duration,
         ),
       );
+    }
     return SizedBox(
       width: finalBlocksEvery,
       child: Row(
@@ -411,10 +421,7 @@ class _TimelineEditorState extends State<TimelineEditor> {
             child: Padding(
               padding: const EdgeInsets.only(left: 4.0),
               child: Text(
-                secondsToString(
-                  pos,
-                  widget.duration,
-                ),
+                secondsToString(pos),
                 style: widget.timelineTextStyle ??
                     Theme.of(context).textTheme.bodyText1,
                 overflow: TextOverflow.ellipsis,
