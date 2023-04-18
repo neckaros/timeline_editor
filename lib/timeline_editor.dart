@@ -1,4 +1,4 @@
-import 'dart:math';
+import 'dart:async';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +6,7 @@ import 'package:linked_scroll_controller/linked_scroll_controller.dart';
 import 'package:timeline_editor/timeline_editor_scale_controller.dart';
 import 'package:timeline_editor/timeline_editor_track.dart';
 
-import 'cahced_layout_builder.dart';
+import 'cached_layout_builder.dart';
 import 'extensions.dart';
 export './timeline_editor_track.dart';
 export './extensions.dart';
@@ -16,10 +16,11 @@ export './timeline_editor_scale_controller.dart';
 /// [pixelsPerSeconds] how much pixel takes a second
 /// [duration] of the timeline
 typedef TimelineEditorTrackBuilder = TimelineEditorTrack Function(
-    int trackNumber,
-    double pixelsPerSeconds,
-    Duration duration,
-    LinkedScrollControllerGroup scrollControllers);
+  int trackNumber,
+  double pixelsPerSeconds,
+  Duration duration,
+  LinkedScrollControllerGroup scrollControllers,
+);
 
 /// Main timeline widget which contains the tracks
 class TimelineEditor extends StatefulWidget {
@@ -30,10 +31,10 @@ class TimelineEditor extends StatefulWidget {
   final Duration duration;
 
   /// Timeline time text theme. By default we use Theme.of(context).textTheme.bodyText1
-  final TextStyle timelineTextStyle;
+  final TextStyle? timelineTextStyle;
 
   /// Opational: Convert duration to string for the timeline headers
-  final Widget Function(Duration duration, Duration totalDuration)
+  final Widget Function(Duration duration, Duration totalDuration)?
       timeWidgetBuilder;
 
   /// Optional hright of the time bar displayed on top of the timeline.
@@ -48,19 +49,16 @@ class TimelineEditor extends StatefulWidget {
   /// Optional argument to force the spacing between each time widget
   /// by default we will optimize as best fitted by the [minimumTimeWidgetExtent] while keeping round number:
   /// one every seconds, 5 seconds, ten seconds, minutes, days, weeks, month years
-  final Duration timeWidgetEvery;
+  final Duration? timeWidgetEvery;
 
   /// Color used by the time separator in the timeline.
   /// By default we use Theme.of(context).brightness == Brightness.dark ? Colors.white60 : Colors.black87
-  final Color separatorColor;
-
-  /// optional distance in seconds between each time indicator
-  final Duration blocksEvery;
+  final Color? separatorColor;
 
   /// a Widget that can be displayed as headding for leading widgets.
-  final Widget timelineLeadingWidget;
+  final Widget? timelineLeadingWidget;
 
-  final Widget Function(int index) leadingWidgetBuilder;
+  final Widget Function(int index)? leadingWidgetBuilder;
 
   /// the builder for each track
   /// tou can use a [TimelineEditorTrack] or your custom track
@@ -68,22 +66,22 @@ class TimelineEditor extends StatefulWidget {
 
   /// optional position stream in the timeline for the position indicator
   /// we use stream to avoid rebuilding the whole widget for each position change
-  final Stream<double> positionStream;
-
-  /// user whant to switch to a time position in seconds
-  final void Function(double position) onPositionTap;
+  final Stream<double>? positionStream;
 
   /// scale controller use to
   /// manually set scale
   /// get updates of scale
   /// set min & max scale
-  final TimelineEditorScaleController scaleController;
+  final TimelineEditorScaleController? scaleController;
+
+  /// optional initial duration for timeline
+  final Duration? initialDuration;
 
   const TimelineEditor({
-    Key key,
-    @required this.duration,
-    @required this.trackBuilder,
-    @required this.countTracks,
+    super.key,
+    required this.duration,
+    required this.trackBuilder,
+    required this.countTracks,
     this.timelineTextStyle,
     this.timeWidgetBuilder,
     this.scaleController,
@@ -92,66 +90,80 @@ class TimelineEditor extends StatefulWidget {
     this.minimumTimeWidgetExtent = 70,
     this.separatorColor,
     this.positionStream,
-    this.blocksEvery = const Duration(seconds: 5),
-    this.onPositionTap,
     this.timelineLeadingWidget,
     this.leadingWidgetBuilder,
-  }) : super(key: key);
+    this.initialDuration,
+  })  : assert(duration > Duration.zero),
+        assert(initialDuration == null || initialDuration < duration);
+
   @override
-  _TimelineEditorState createState() => _TimelineEditorState();
+  State<TimelineEditor> createState() => _TimelineEditorState();
 }
 
 class _TimelineEditorState extends State<TimelineEditor> {
-  double scale = 1;
-  double widgetWidth;
-  double previousScale;
-  double pps;
-  double timeBlockSize;
-
-  Duration _timeUnderFocal;
-  double scaleFocal;
+  late double scale = scaleController.minScale;
+  late double widgetWidth;
+  double? previousScale;
+  double? pps;
+  late double timeBlockSize = widget.minimumTimeWidgetExtent;
 
   double get scaledPixelPerSeconds => (pps ?? 1) * scale;
 
-  TimelineEditorScaleController _ownScaleController;
+  TimelineEditorScaleController? _ownScaleController;
   TimelineEditorScaleController get scaleController {
-    if (widget.scaleController == null && _ownScaleController == null)
+    if (widget.scaleController == null && _ownScaleController == null) {
       _ownScaleController = TimelineEditorScaleController();
+    }
 
-    return widget.scaleController ?? _ownScaleController;
+    return widget.scaleController ?? _ownScaleController!;
   }
 
-  ScrollController scrollController;
-  LinkedScrollControllerGroup _controllers;
+  late ScrollController scrollController;
+  late LinkedScrollControllerGroup _controllers;
 
-  double previousMaxWidth;
+  StreamSubscription<double>? _scaleSubscription;
+
+  late double previousMaxWidth;
   String twoDigits(int n) {
     if (n >= 10) return "$n";
     return "0$n";
   }
 
+  static double _calculateTimeBlockSizeFromBreakpoints({
+    required double displayWidth,
+    required double scaledPixelPerSeconds,
+    required double minimumTimeWidth,
+  }) {
+    const List<Map<String, dynamic>> breakpoints = [
+      {'duration': Duration(seconds: 5), 'size': 5},
+      {'duration': Duration(seconds: 10), 'size': 10},
+      {'duration': Duration(seconds: 30), 'size': 30},
+      {'duration': Duration(minutes: 1), 'size': 60},
+    ];
+    var targetNumberOfTimeWidget = displayWidth / minimumTimeWidth;
+    var targetDurationOfTimeWidget = durationFromSeconds(
+        displayWidth / scaledPixelPerSeconds / targetNumberOfTimeWidget);
+
+    final breakpoint = breakpoints.firstWhere(
+      (element) => targetDurationOfTimeWidget < element['duration'],
+      orElse: () => {'size': targetDurationOfTimeWidget.inSeconds - 60},
+    );
+
+    return breakpoint['size'] * scaledPixelPerSeconds;
+  }
+
   void updateTimeBlockSize(double displayWidth) {
     if (widget.timeWidgetEvery != null) {
       timeBlockSize =
-          widget.timeWidgetEvery.inSecondsAsDouble * scaledPixelPerSeconds;
-    } else {
-      var targetNumberOfTimeWidget =
-          displayWidth / (widget.minimumTimeWidgetExtent ?? 70);
-      var targetDurationOfTimeWidget = durationFromSeconds(
-          displayWidth / scaledPixelPerSeconds / targetNumberOfTimeWidget);
-      if (targetDurationOfTimeWidget.inSeconds < 5)
-        timeBlockSize = 5 * scaledPixelPerSeconds;
-      else if (targetDurationOfTimeWidget.inSeconds < 10)
-        timeBlockSize = 10 * scaledPixelPerSeconds;
-      else if (targetDurationOfTimeWidget.inSeconds < 30)
-        timeBlockSize = 30 * scaledPixelPerSeconds;
-      else if (targetDurationOfTimeWidget.inMinutes < 1)
-        timeBlockSize = 60 * scaledPixelPerSeconds;
-      else if (targetDurationOfTimeWidget.inMinutes < 60)
-        timeBlockSize = (targetDurationOfTimeWidget.inMinutes + 1) *
-            60 *
-            scaledPixelPerSeconds;
+          widget.timeWidgetEvery!.inSecondsAsDouble * scaledPixelPerSeconds;
+      return;
     }
+
+    timeBlockSize = _calculateTimeBlockSizeFromBreakpoints(
+      displayWidth: displayWidth,
+      scaledPixelPerSeconds: scaledPixelPerSeconds,
+      minimumTimeWidth: widget.minimumTimeWidgetExtent,
+    );
   }
 
   void computePPS(double width) {
@@ -160,50 +172,47 @@ class _TimelineEditorState extends State<TimelineEditor> {
     updateTimeBlockSize(width);
   }
 
-  String secondsToString(Duration duration, Duration totalDuration) {
-    var _duration = Duration(microseconds: duration.inMicroseconds);
-    int weeks = _duration.inDays > 7 ? (_duration.inDays / 7).floor() : 0;
-    _duration = _duration - Duration(days: weeks * 7);
-    int days = _duration.inDays;
-    _duration = _duration - Duration(days: _duration.inDays);
-    int hours = _duration.inHours;
-    _duration = _duration - Duration(hours: _duration.inHours);
-    int minutes = _duration.inMinutes;
-    _duration = _duration - Duration(minutes: _duration.inMinutes);
-    int seconds = _duration.inSeconds;
+  String secondsToString(Duration duration) {
+    var curDuration = Duration(microseconds: duration.inMicroseconds);
+    final weeks = curDuration.inDays > 7 ? (curDuration.inDays / 7).floor() : 0;
+    curDuration = curDuration - Duration(days: weeks * 7);
+    final days = curDuration.inDays;
+    curDuration = curDuration - Duration(days: curDuration.inDays);
+    final hours = curDuration.inHours;
+    curDuration = curDuration - Duration(hours: curDuration.inHours);
+    final minutes = curDuration.inMinutes;
+    curDuration = curDuration - Duration(minutes: curDuration.inMinutes);
+    final seconds = curDuration.inSeconds;
 
-    if (weeks > 1)
+    if (weeks >= 1) {
       return '${weeks}w${days}d';
-    else if (days > 1)
+    } else if (days >= 1) {
       return '${days}d ${hours}h';
-    else if (hours > 1)
+    } else if (hours >= 1) {
       return '${hours}h${twoDigits(minutes)}';
-    else
+    } else {
       return '${twoDigits(minutes)}:${twoDigits(seconds)}';
+    }
   }
 
   void _onScaleStart(double dx) {
     previousScale = scale;
-    _timeUnderFocal =
-        durationFromSeconds((dx + scrollController.offset) / pps / scale);
     // (details.focalPoint.dx + scrollController.offset) / pps / scale);
   }
 
   void _onScaleUpdate(double details) {
-    // print("Details $details");
-    var newScale = previousScale * details; //.scale;
-    if (newScale < 1) newScale = 1;
-    scaleController.setScale(newScale);
+    final newScale = (previousScale ?? scale) * details; //.scale;
+    scaleController.setScale(newScale >= 1 ? newScale : 1);
   }
 
   void _onScaleEnd(_) {
     previousScale = null;
-    _timeUnderFocal = null;
   }
 
   @override
   void didUpdateWidget(TimelineEditor oldWidget) {
     super.didUpdateWidget(oldWidget);
+    previousMaxWidth = MediaQuery.of(context).size.width;
     if (oldWidget.duration != widget.duration) {
       computePPS(previousMaxWidth);
       setState(() {});
@@ -215,14 +224,33 @@ class _TimelineEditorState extends State<TimelineEditor> {
     super.initState();
     _controllers = LinkedScrollControllerGroup();
     scrollController = _controllers.addAndGet();
-    scaleController.scaleUpdates.listen((s) {
-      if (scale != s) {
-        setState(() => scale = s);
-        updateTimeBlockSize(widgetWidth);
-        var offset = _controllers.offset;
-        _controllers.resetScroll();
-        _controllers.jumpTo(offset);
+
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      previousMaxWidth = MediaQuery.of(context).size.width;
+      computePPS(previousMaxWidth);
+
+      setState(() => {});
+
+      if (widget.initialDuration != null) {
+        _controllers.jumpTo(
+          scaledPixelPerSeconds *
+              (widget.initialDuration?.inSecondsAsDouble ?? 1),
+        );
       }
+    });
+
+    _scaleSubscription = scaleController.scaleUpdates.listen((s) {
+      while (!mounted) {}
+
+      if (scale == s) {
+        return;
+      }
+
+      setState(() => scale = s);
+      updateTimeBlockSize(widgetWidth);
+
+      _controllers.resetScroll();
+      _controllers.jumpTo(_controllers.offset);
     });
   }
 
@@ -230,6 +258,7 @@ class _TimelineEditorState extends State<TimelineEditor> {
   void dispose() {
     scrollController.dispose();
     _ownScaleController?.dispose();
+    _scaleSubscription?.cancel();
     super.dispose();
   }
 
@@ -266,8 +295,6 @@ class _TimelineEditorState extends State<TimelineEditor> {
                 widget.trackBuilder,
                 widget.countTracks,
                 widget.positionStream,
-                widget.blocksEvery,
-                widget.onPositionTap,
                 widget.separatorColor,
                 widget.timelineTextStyle,
                 Theme.of(context).brightness,
@@ -287,81 +314,91 @@ class _TimelineEditorState extends State<TimelineEditor> {
                             totalFullTimeSlots) *
                         timeBlockSize;
 
-                return Container(
-                  child: Row(
-                    children: [
-                      Column(
-                        // mainAxisSize: MainAxisSize.max,
-                        // mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          SizedBox(
-                            height: widget.timeHeight * 2,
-                            child: widget.timelineLeadingWidget,
+                return Row(
+                  children: [
+                    Column(
+                      // mainAxisSize: MainAxisSize.max,
+                      // mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        SizedBox(
+                          height: widget.timeHeight * 2,
+                          child: widget.timelineLeadingWidget,
+                        ),
+                        ...List<Widget>.generate(
+                          widget.countTracks,
+                          (i) => SizedBox(
+                            height: widget
+                                .trackBuilder(
+                                  i,
+                                  scaledPixelPerSeconds,
+                                  widget.duration,
+                                  _controllers,
+                                )
+                                .trackHeight,
+                            child: widget.leadingWidgetBuilder != null
+                                ? widget.leadingWidgetBuilder!(i)
+                                : const SizedBox.shrink(),
                           ),
-                          ...List<Widget>.generate(
-                              widget.countTracks,
-                              (i) => SizedBox(
-                                  height: widget
-                                      .trackBuilder(i, scaledPixelPerSeconds,
-                                          widget.duration, _controllers)
-                                      .trackHeight,
-                                  child: widget.leadingWidgetBuilder != null
-                                      ? widget.leadingWidgetBuilder(i)
-                                      : SizedBox.shrink())),
+                        ),
+                      ],
+                    ),
+                    Flexible(
+                      child: Stack(
+                        children: [
+                          Column(
+                            children: <Widget>[
+                              SizedBox(
+                                height: widget.timeHeight,
+                                child: ListView.builder(
+                                  key: const Key('timelineeditor-times'),
+                                  controller: scrollController,
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: totalTimeSlots,
+                                  itemBuilder: (context, index) {
+                                    return buildTextTime(
+                                      index,
+                                      scaledPixelPerSeconds,
+                                      index <= totalFullTimeSlots - 1
+                                          ? timeBlockSize
+                                          : lastTimeBlockSize,
+                                      context,
+                                    );
+                                  },
+                                ),
+                              ),
+                              ...List.generate(
+                                widget.countTracks,
+                                (index) => widget.trackBuilder(
+                                  index,
+                                  scaledPixelPerSeconds,
+                                  widget.duration,
+                                  _controllers,
+                                ),
+                              ),
+                            ],
+                          ),
+                          StreamBuilder<double>(
+                            stream: widget.positionStream,
+                            builder: (context, snapshot) {
+                              return snapshot.hasData
+                                  ? Positioned(
+                                      left: (snapshot.data! *
+                                              scaledPixelPerSeconds) -
+                                          scrollController.position.pixels,
+                                      top: 0,
+                                      bottom: 0,
+                                      child: Container(
+                                        color: Colors.red,
+                                        width: 5,
+                                      ),
+                                    )
+                                  : const SizedBox.shrink();
+                            },
+                          )
                         ],
                       ),
-                      Flexible(
-                        child: Stack(
-                          children: [
-                            Column(
-                              children: <Widget>[
-                                Container(
-                                  height: widget.timeHeight,
-                                  child: ListView.builder(
-                                      key: Key('timelineeditor-times'),
-                                      controller: scrollController,
-                                      scrollDirection: Axis.horizontal,
-                                      itemCount: totalTimeSlots,
-                                      itemBuilder: (context, index) {
-                                        return buildTextTime(
-                                            index,
-                                            scaledPixelPerSeconds,
-                                            index <= totalFullTimeSlots - 1
-                                                ? timeBlockSize
-                                                : lastTimeBlockSize,
-                                            context);
-                                      }),
-                                ),
-                                ...List.generate(
-                                    widget.countTracks,
-                                    (index) => widget.trackBuilder(
-                                        index,
-                                        scaledPixelPerSeconds,
-                                        widget.duration,
-                                        _controllers)),
-                              ],
-                            ),
-                            StreamBuilder<double>(
-                                stream: widget.positionStream,
-                                builder: (context, snapshot) {
-                                  return snapshot.hasData
-                                      ? Positioned(
-                                          left: (snapshot.data *
-                                                  scaledPixelPerSeconds) -
-                                              scrollController.position.pixels,
-                                          top: 0,
-                                          bottom: 0,
-                                          child: Container(
-                                            color: Colors.red,
-                                            width: 5,
-                                          ))
-                                      : null;
-                                })
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 );
               }),
         ),
@@ -369,18 +406,23 @@ class _TimelineEditorState extends State<TimelineEditor> {
     );
   }
 
-  Widget buildTextTime(int i, double scaledPixelsPerSeconds,
-      double finalBlocksEvery, BuildContext context) {
+  Widget buildTextTime(
+    int i,
+    double scaledPixelsPerSeconds,
+    double finalBlocksEvery,
+    BuildContext context,
+  ) {
     var pos =
         durationFromSeconds(i * finalBlocksEvery / scaledPixelsPerSeconds);
-    if (widget.timeWidgetBuilder != null)
+    if (widget.timeWidgetBuilder != null) {
       return SizedBox(
         width: finalBlocksEvery,
-        child: widget.timeWidgetBuilder(
+        child: widget.timeWidgetBuilder!(
           pos,
           widget.duration,
         ),
       );
+    }
     return SizedBox(
       width: finalBlocksEvery,
       child: Row(
@@ -394,10 +436,7 @@ class _TimelineEditorState extends State<TimelineEditor> {
             child: Padding(
               padding: const EdgeInsets.only(left: 4.0),
               child: Text(
-                secondsToString(
-                  pos,
-                  widget.duration,
-                ),
+                secondsToString(pos),
                 style: widget.timelineTextStyle ??
                     Theme.of(context).textTheme.bodyText1,
                 overflow: TextOverflow.ellipsis,

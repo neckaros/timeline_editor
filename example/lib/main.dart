@@ -13,7 +13,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   Duration totalDuration = Duration(seconds: 600);
 
-  Duration box1Start = Duration(seconds: 30);
+  Duration box1Start = Duration(seconds: 0);
   Duration box1Duration = Duration(seconds: 50);
   bool box1Selected = false;
   Duration box2Start = Duration(seconds: 100);
@@ -31,16 +31,15 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   double position = 0;
   bool customTimeString = false;
   bool withHeaders = false;
-  StreamController<double> positionController;
-  Timer progressTimer;
-  TimelineEditorScaleController scaleController;
 
-  double scale;
+  late StreamController<double> positionController;
+  late Timer progressTimer;
+  late TimelineEditorScaleController scaleController;
+  late AnimationController _controller;
+  late Animation<double> _animation;
 
-  double _trackHeight = 100;
-
-  AnimationController _controller;
-  Animation<double> _animation;
+  var scale = 1.0;
+  var _trackHeight = 100.0;
 
   void moveBox1(Duration newStart) {
     if (box1Start + newStart < Duration.zero) {
@@ -58,7 +57,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   }
 
   void moveBox2(Duration startMove) {
-    var newStart = box2Start + startMove;
+    final newStart = box2Start + startMove;
     if (box1Start + box1Duration < newStart &&
         newStart + box2Duration < totalDuration)
       setState(() {
@@ -89,7 +88,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   }
 
   void moveBox2b(Duration startMove) {
-    var newStart = box2bStart + startMove;
+    final newStart = box2bStart + startMove;
     if (box1Start + box1bDuration < newStart &&
         newStart + box2bDuration < totalDuration)
       setState(() {
@@ -102,7 +101,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
       setState(() => box2bDuration = box2bDuration + move);
   }
 
-  void positionUpdate(Timer timer) {
+  void positionUpdate([Timer? timer]) {
     position += 0.350;
     if (position > 300) position = 0;
     positionController.add(position);
@@ -122,16 +121,16 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
       ..addListener(() {
         setState(() => _trackHeight = _animation.value);
       });
-    positionUpdate(null);
+    positionUpdate();
   }
 
   @override
   void dispose() {
     scaleController.dispose();
-    progressTimer?.cancel();
-    positionController?.close();
+    progressTimer.cancel();
+    positionController.close();
 
-    _controller?.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -157,7 +156,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                     builder: (context, snapshot) {
                       return Text('Current scale: ' + snapshot.data.toString());
                     }),
-                RaisedButton(
+                ElevatedButton(
                   child: const Text('Change track height'),
                   onPressed: () =>
                       _controller.status == AnimationStatus.forward ||
@@ -180,11 +179,14 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: TimelineEditor(
                   scaleController: scaleController,
-                  minimumTimeWidgetExtent: customTimeString ? 100 : null,
+                  minimumTimeWidgetExtent: customTimeString ? 100.0 : 70.0,
                   leadingWidgetBuilder: withHeaders
                       ? (index) => Center(
-                          child: RaisedButton(
-                              onPressed: () {}, child: Text("$index")))
+                            child: ElevatedButton(
+                              onPressed: () {},
+                              child: Text("$index"),
+                            ),
+                          )
                       : null,
                   timelineLeadingWidget:
                       withHeaders ? Center(child: Text("HEADER")) : null,
@@ -206,6 +208,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                               // key: Key('separated'),
                               scrollControllers: scrollControllers,
                               defaultColor: Colors.green[700],
+                              onEmptySlotTap: print,
                               boxes: [
                                 TimelineEditorCard(
                                   box1Start,
@@ -217,21 +220,23 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                                   onMovedDuration: moveBox1End,
                                   onMovedStart: moveBox1,
                                 ),
-                                TimelineEditorCard(box2Start,
-                                    duration: box2Duration,
-                                    menuEntries: [
-                                      PopupMenuItem<String>(
-                                          child: Text('Demo!'), value: 'demo')
-                                    ],
-                                    onSelectedMenuItem: (v) {
-                                      print(v);
-                                    },
-                                    onMovedDuration: moveBox2End,
-                                    onMovedStart: moveBox2,
-                                    selected: box2Selected,
-                                    onTap: () => setState(
-                                        () => box2Selected = !box2Selected),
-                                    color: Colors.green),
+                                TimelineEditorCard(
+                                  box2Start,
+                                  duration: box2Duration,
+                                  menuEntries: [
+                                    PopupMenuItem<String>(
+                                        child: Text('Demo!'), value: 'demo')
+                                  ],
+                                  onSelectedMenuItem: (v) {
+                                    print(v);
+                                  },
+                                  onMovedDuration: moveBox2End,
+                                  onMovedStart: moveBox2,
+                                  selected: box2Selected,
+                                  onTap: () => setState(
+                                      () => box2Selected = !box2Selected),
+                                  color: Colors.green,
+                                ),
                               ],
                               pixelsPerSeconds: pps,
                               duration: duration,
