@@ -74,6 +74,9 @@ class TimelineEditor extends StatefulWidget {
   /// set min & max scale
   final TimelineEditorScaleController? scaleController;
 
+  /// optional initial duration for timeline
+  final Duration? initialDuration;
+
   const TimelineEditor({
     super.key,
     required this.duration,
@@ -89,7 +92,9 @@ class TimelineEditor extends StatefulWidget {
     this.positionStream,
     this.timelineLeadingWidget,
     this.leadingWidgetBuilder,
-  });
+    this.initialDuration,
+  })  : assert(duration > Duration.zero),
+        assert(initialDuration == null || initialDuration < duration);
 
   @override
   State<TimelineEditor> createState() => _TimelineEditorState();
@@ -223,7 +228,15 @@ class _TimelineEditorState extends State<TimelineEditor> {
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       previousMaxWidth = MediaQuery.of(context).size.width;
       computePPS(previousMaxWidth);
-      setState(() {});
+
+      setState(() => {});
+
+      if (widget.initialDuration != null) {
+        _controllers.jumpTo(
+          scaledPixelPerSeconds *
+              (widget.initialDuration?.inSecondsAsDouble ?? 1),
+        );
+      }
     });
 
     _scaleSubscription = scaleController.scaleUpdates.listen((s) {
@@ -301,89 +314,91 @@ class _TimelineEditorState extends State<TimelineEditor> {
                             totalFullTimeSlots) *
                         timeBlockSize;
 
-                return Container(
-                  child: Row(
-                    children: [
-                      Column(
-                        // mainAxisSize: MainAxisSize.max,
-                        // mainAxisAlignment: MainAxisAlignment.spaceAround,
+                return Row(
+                  children: [
+                    Column(
+                      // mainAxisSize: MainAxisSize.max,
+                      // mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        SizedBox(
+                          height: widget.timeHeight * 2,
+                          child: widget.timelineLeadingWidget,
+                        ),
+                        ...List<Widget>.generate(
+                          widget.countTracks,
+                          (i) => SizedBox(
+                            height: widget
+                                .trackBuilder(
+                                  i,
+                                  scaledPixelPerSeconds,
+                                  widget.duration,
+                                  _controllers,
+                                )
+                                .trackHeight,
+                            child: widget.leadingWidgetBuilder != null
+                                ? widget.leadingWidgetBuilder!(i)
+                                : const SizedBox.shrink(),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Flexible(
+                      child: Stack(
                         children: [
-                          SizedBox(
-                            height: widget.timeHeight * 2,
-                            child: widget.timelineLeadingWidget,
+                          Column(
+                            children: <Widget>[
+                              SizedBox(
+                                height: widget.timeHeight,
+                                child: ListView.builder(
+                                  key: const Key('timelineeditor-times'),
+                                  controller: scrollController,
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: totalTimeSlots,
+                                  itemBuilder: (context, index) {
+                                    return buildTextTime(
+                                      index,
+                                      scaledPixelPerSeconds,
+                                      index <= totalFullTimeSlots - 1
+                                          ? timeBlockSize
+                                          : lastTimeBlockSize,
+                                      context,
+                                    );
+                                  },
+                                ),
+                              ),
+                              ...List.generate(
+                                widget.countTracks,
+                                (index) => widget.trackBuilder(
+                                  index,
+                                  scaledPixelPerSeconds,
+                                  widget.duration,
+                                  _controllers,
+                                ),
+                              ),
+                            ],
                           ),
-                          ...List<Widget>.generate(
-                            widget.countTracks,
-                            (i) => SizedBox(
-                              height: widget
-                                  .trackBuilder(
-                                    i,
-                                    scaledPixelPerSeconds,
-                                    widget.duration,
-                                    _controllers,
-                                  )
-                                  .trackHeight,
-                              child: widget.leadingWidgetBuilder != null
-                                  ? widget.leadingWidgetBuilder!(i)
-                                  : const SizedBox.shrink(),
-                            ),
-                          ),
+                          StreamBuilder<double>(
+                            stream: widget.positionStream,
+                            builder: (context, snapshot) {
+                              return snapshot.hasData
+                                  ? Positioned(
+                                      left: (snapshot.data! *
+                                              scaledPixelPerSeconds) -
+                                          scrollController.position.pixels,
+                                      top: 0,
+                                      bottom: 0,
+                                      child: Container(
+                                        color: Colors.red,
+                                        width: 5,
+                                      ),
+                                    )
+                                  : const SizedBox.shrink();
+                            },
+                          )
                         ],
                       ),
-                      Flexible(
-                        child: Stack(
-                          children: [
-                            Column(
-                              children: <Widget>[
-                                SizedBox(
-                                  height: widget.timeHeight,
-                                  child: ListView.builder(
-                                      key: const Key('timelineeditor-times'),
-                                      controller: scrollController,
-                                      scrollDirection: Axis.horizontal,
-                                      itemCount: totalTimeSlots,
-                                      itemBuilder: (context, index) {
-                                        return buildTextTime(
-                                            index,
-                                            scaledPixelPerSeconds,
-                                            index <= totalFullTimeSlots - 1
-                                                ? timeBlockSize
-                                                : lastTimeBlockSize,
-                                            context);
-                                      }),
-                                ),
-                                ...List.generate(
-                                  widget.countTracks,
-                                  (index) => widget.trackBuilder(
-                                    index,
-                                    scaledPixelPerSeconds,
-                                    widget.duration,
-                                    _controllers,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            StreamBuilder<double>(
-                                stream: widget.positionStream,
-                                builder: (context, snapshot) {
-                                  return snapshot.hasData
-                                      ? Positioned(
-                                          left: (snapshot.data! *
-                                                  scaledPixelPerSeconds) -
-                                              scrollController.position.pixels,
-                                          top: 0,
-                                          bottom: 0,
-                                          child: Container(
-                                            color: Colors.red,
-                                            width: 5,
-                                          ))
-                                      : const SizedBox.shrink();
-                                })
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 );
               }),
         ),
